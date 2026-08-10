@@ -2,14 +2,20 @@
 
 from uuid import UUID
 
+import structlog
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domain.conversation.modes import RISK_CLASSIFIER_VERSION
 from app.domain.safety import SafetyReason
 from app.infra.repositories import (
     ConversationRepository,
     MessageRepository,
+    UserModeEventRepository,
     UserRepository,
 )
+
+logger = structlog.get_logger(__name__)
 
 
 class PostgresConversationPersistence:
@@ -20,6 +26,7 @@ class PostgresConversationPersistence:
         self._users = UserRepository(session)
         self._conversations = ConversationRepository(session)
         self._messages = MessageRepository(session)
+        self._mode_events = UserModeEventRepository(session)
 
     async def save_exchange(
         self,
@@ -34,10 +41,17 @@ class PostgresConversationPersistence:
         request_id: str,
         is_mock: bool,
         degraded: bool,
+        mode: str = "",
     ) -> UUID:
         """保存整轮对话；任一步失败都会回滚本次事务。"""
         try:
             user = await self._users.get_or_create(external_user_id)
+            if mode:
+                await self._mode_events.record(
+                    user_id=user.id,
+                    mode=mode,
+                    classifier_version=RISK_CLASSIFIER_VERSION,
+                )
             conversation = None
             if conversation_id is not None:
                 conversation = await self._conversations.get_for_user(
@@ -76,3 +90,46 @@ class PostgresConversationPersistence:
         except Exception:
             await self._session.rollback()
             raise
+
+    async def is_safety_locked(
+        self, *, external_user_id: str, conversation_id: UUID | None
+    ) -> bool:
+        """查这个会话有没有被锁。首轮（没有 conversation_id）一定是 False。
+
+        读失败一律返回 False——**不能因为数据库抖动就把正常会话锁住**。
+        反过来的风险（漏掉一次锁定）由这一轮的分类器兜底：真危机会被重新识别。
+        """
+        if conversation_id is None:
+            return False
+        try:
+            user = await self._users.get_by_external_id(external_user_id)
+            if user is None:
+                return False
+            conversation = await self._conversations.get_for_user(
+                conversation_id, user.id
+            )
+            return bool(conversation and conversation.safety_locked)
+        except SQLAlchemyError as exc:
+            logger.warning("safety_lock_read_failed", error=str(exc))
+            return False
+
+    async def lock_for_safety(
+        self, *, external_user_id: str, conversation_id: UUID, risk_level: str
+    ) -> None:
+        """锁住会话。失败只记日志——这一轮的固定文案已经发出去了，
+        锁不上最多是下一轮又走一遍识别，不该让它把请求搞失败。
+        """
+        try:
+            user = await self._users.get_by_external_id(external_user_id)
+            if user is None:
+                return
+            conversation = await self._conversations.get_for_user(
+                conversation_id, user.id
+            )
+            if conversation is None:
+                return
+            await self._conversations.mark_safety_locked(conversation, risk_level)
+            await self._session.commit()
+        except SQLAlchemyError as exc:
+            await self._session.rollback()
+            logger.warning("safety_lock_write_failed", error=str(exc))

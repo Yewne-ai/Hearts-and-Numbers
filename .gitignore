@@ -48,3 +48,12 @@ docs/unienv*.md
 # 导出到 docs/prompt-snapshots/ (那个目录是纳管的)。
 services/api/app/llm/runtime_overrides.json
 services/api/app/llm/runtime_overrides.bak.*.json
+
+# 意图识别改版期间产出的工作稿（2026-08-05~09）。不纳管的原因：
+# 1. 消融/留出集对照文件是一次性的实验产物，几百组回复，看完就没用了，
+#    复现路径在 services/api/_probe_*.py 里，比文件本身可靠。
+# 2. 给产品的需求文档和附件里含产品同事写的句子，进版本库前要先确认。
+docs/意图识别改版_*
+docs/mode消融*
+docs/B组留出集对照.md
+docs/危机表达_改版前后对比.md

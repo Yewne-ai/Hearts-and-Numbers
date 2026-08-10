@@ -21,6 +21,7 @@ class _FakeOkProvider:
         user_text: str,
         history: list[dict] | None = None,
         persona: str = "nini",
+        mode: object | None = None,
     ) -> str:
         return f"fake-reply: {user_text}"
 
@@ -35,10 +36,9 @@ class _FakeFailingProvider:
         user_text: str,
         history: list[dict] | None = None,
         persona: str = "nini",
+        mode: object | None = None,
     ) -> str:
         raise LLMError(self.code, "boom", upstream_status=self.status)
-
-
 
 
 class _FakePersistence:
@@ -62,6 +62,7 @@ class _FakePersistence:
         request_id: str,
         is_mock: bool,
         degraded: bool,
+        mode: str = "",
     ) -> UUID:
         self.calls.append(
             {
@@ -78,8 +79,6 @@ class _FakePersistence:
             }
         )
         return self.conversation_id
-
-
 
 
 @pytest.mark.asyncio

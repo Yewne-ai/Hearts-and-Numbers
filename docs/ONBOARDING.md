@@ -69,6 +69,55 @@ uv run uvicorn app.main:app --reload
 > **没有 Key 也能跑**：自动降级 Mock 模式，AI 回固定模板，用来测通路。
 > 语音功能（STT/TTS）需要对应的 key，没配就只走文字 + 浏览器朗读。
 
+### 数据库和 Redis（登录、「往期」、偏好统计要用）
+
+不装也能跑聊天——`PERSISTENCE_ENABLED=false` 时后端照常起。但下面这些会不通：
+登录注册（验证码存 Redis）、「往期」聊天记录、每轮判定的落库。
+
+**用 Docker**（`compose.yaml` 里 Postgres 16 + Redis 都配好了）：
+
+```bash
+docker compose up -d db redis
+```
+
+**或者直接装到本机**（没有 Docker 时）：
+
+```bash
+brew install postgresql@16 redis
+brew services start postgresql@16
+brew services start redis
+
+# 建库建角色，对上 .env 里那串 DATABASE_URL
+createuser -s yewne 2>/dev/null; psql postgres -c "ALTER ROLE yewne PASSWORD 'yewne_dev_password'"
+createdb -O yewne yewne_dev
+```
+
+然后跑迁移、打开持久化：
+
+```bash
+cd services/api
+uv run alembic upgrade head
+# .env 里把 PERSISTENCE_ENABLED 改成 true
+```
+
+#### 两个会卡住的坑
+
+**brew 装不动。** 从境外源拉包可能几十分钟一个字节都没有。配镜像重试：
+
+```bash
+HOMEBREW_API_DOMAIN="https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles/api" \
+HOMEBREW_BOTTLE_DOMAIN="https://mirrors.tuna.tsinghua.edu.cn/homebrew-bottles" \
+brew install postgresql@16
+```
+
+`uv sync` 从 PyPI 拉包慢也是同一个原因，`UV_INDEX_URL` 指到国内镜像即可。
+
+**Redis 起不来、`brew services list` 显示 error。** 如果这台机器以前装过
+redis-stack，`/opt/homebrew/etc/redis.conf` 里会留下几行
+`loadmodule ./modules/redisbloom/...`；普通 redis 找不到这些文件会**直接中止启动**，
+而 `brew services start` 仍然报成功。看 `/opt/homebrew/var/log/redis.log`
+确认，把那几行注释掉再 restart。
+
 ### 前端
 另开一个终端：
 ```bash

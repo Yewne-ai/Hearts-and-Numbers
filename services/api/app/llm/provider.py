@@ -11,7 +11,10 @@
 可测试性）。
 """
 
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:  # 避免 provider 反向依赖 classifier_v2 造成循环导入
+    from app.domain.conversation.modes import ResponseMode
 
 
 class LLMError(RuntimeError):
@@ -39,6 +42,7 @@ class LLMProvider(Protocol):
         user_text: str,
         history: list[dict] | None = None,
         persona: str = "nini",
+        mode: "ResponseMode | None" = None,
     ) -> str: ...
 
 
@@ -55,6 +59,7 @@ class MockProvider:
         user_text: str,
         history: list[dict] | None = None,
         persona: str = "nini",
+        mode: "ResponseMode | None" = None,
     ) -> str:
         template = self._DEFAULT_TEMPLATE
         echo = f"你说「{user_text.strip()[:40]}」，" if user_text.strip() else ""

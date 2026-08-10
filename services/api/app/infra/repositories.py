@@ -7,7 +7,7 @@ from uuid import UUID
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infra.models import Conversation, Message, User
+from app.infra.models import Conversation, Message, User, UserModeEvent
 
 
 class UserRepository:
@@ -74,6 +74,15 @@ class ConversationRepository:
         self._session.add(conversation)
         await self._session.flush()
         return conversation
+
+    async def mark_safety_locked(
+        self, conversation: Conversation, risk_level: str
+    ) -> None:
+        """锁住会话并记下等级。只升不降——同一个会话里后来的普通对话
+        不该把已经识别出的危机抹掉。"""
+        conversation.safety_locked = True
+        conversation.risk_level = risk_level
+        await self._session.flush()
 
     async def get_for_user(
         self,
@@ -169,6 +178,43 @@ class MessageRepository:
             select(Message)
             .where(Message.conversation_id == conversation_id)
             .order_by(Message.created_at)
+        )
+        result = await self._session.execute(statement)
+        return list(result.scalars().all())
+
+
+class UserModeEventRepository:
+    """回应模式的落库与回读。偏好那一层唯一的数据来源。"""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def record(
+        self, *, user_id: UUID, mode: str, classifier_version: str
+    ) -> None:
+        """记一次判定。不提交事务——和这一轮的消息写在同一个事务里，
+        要么都成要么都不成，避免出现"有回复没记录"的半截状态。
+        """
+        self._session.add(
+            UserModeEvent(
+                user_id=user_id,
+                mode=mode,
+                classifier_version=classifier_version,
+            )
+        )
+        await self._session.flush()
+
+    async def recent_for_user(self, user_id: UUID, limit: int = 50) -> list[UserModeEvent]:
+        """取最近 N 条，新的在前。
+
+        limit 默认 50 而不是全量：偏好只看近期倾向，而且一个长期用户的
+        历史可能有几千条，全读回来算三个计数是浪费。
+        """
+        statement = (
+            select(UserModeEvent)
+            .where(UserModeEvent.user_id == user_id)
+            .order_by(UserModeEvent.occurred_at.desc())
+            .limit(limit)
         )
         result = await self._session.execute(statement)
         return list(result.scalars().all())

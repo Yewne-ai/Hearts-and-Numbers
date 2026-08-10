@@ -31,8 +31,13 @@ from app.domain.conversation.schemas import (
 )
 from app.domain.conversation.persistence import ConversationPersistence
 from app.domain.reaction.service import detect_reaction
+from app.core.config import settings
 from app.domain.safety import SafetyReason
 from app.domain.safety.provider import SafetyProvider
+from app.domain.safety.care import CareAffordance, affordance_for
+from app.domain.safety.rules import SafetyResult, fallback_text_for
+from app.domain.conversation.modes import ResponseMode, risk_level_for
+from app.llm.factory import get_response_mode_classifier
 from app.domain.speech.service import _clean_for_tts
 from app.llm.provider import LLMError, LLMProvider, MockProvider
 from app.tts.provider import TTSError, TTSProvider
@@ -103,9 +108,7 @@ async def _synthesize_audio(
 ) -> tuple[str, str, bool]:
     """调用 TTS，返回 (audio_base64, content_type, is_mock)。失败时静默降级返回空音频。"""
     try:
-        result = await tts_provider.synthesize(
-            _clean_for_tts(reply), persona=persona
-        )
+        result = await tts_provider.synthesize(_clean_for_tts(reply), persona=persona)
         audio_b64 = (
             base64.b64encode(result.audio).decode("ascii") if result.audio else ""
         )
@@ -130,6 +133,7 @@ async def _persist_exchange_safe(
     request_id: str,
     is_mock: bool,
     degraded: bool,
+    mode: ResponseMode | None = None,
 ) -> UUID | None:
     """保存一轮对话；数据库异常只记录日志，不中断用户回复。"""
     if persistence is None or request.external_user_id is None:
@@ -147,6 +151,7 @@ async def _persist_exchange_safe(
             request_id=request_id,
             is_mock=is_mock,
             degraded=degraded,
+            mode=mode.value if mode else "",
         )
     except Exception:
         logger.exception(
@@ -155,6 +160,117 @@ async def _persist_exchange_safe(
             conversation_id=str(request.conversation_id or ""),
         )
         return request.conversation_id
+
+
+async def _safety_locked(
+    persistence: ConversationPersistence | None,
+    request: ChatDemoRequest,
+    request_id: str,
+) -> bool:
+    """这个会话是否已被锁在危机状态（产品文档 8.4 的"停止普通陪伴"）。
+
+    放在判 mode **之前**：已锁的会话不该再花一次分类调用，而且无论这轮说什么
+    都走同一条固定文案。
+
+    首轮没有会话可查——这个不变量放在服务层，不依赖某个持久化实现去保证，
+    顺带省掉一次数据库往返。
+
+    没开持久化时永远返回 False：没有会话状态就锁不住，硬装作锁住了反而会骗人。
+    """
+    if (
+        persistence is None
+        or not request.external_user_id
+        or request.conversation_id is None
+    ):
+        return False
+    try:
+        locked = await persistence.is_safety_locked(
+            external_user_id=request.external_user_id,
+            conversation_id=request.conversation_id,
+        )
+    except Exception as exc:  # noqa: BLE001 —— 读锁失败不能拖垮主链路
+        # 放行而不是锁住：数据库抖动不该让所有人都收到危机文案。
+        # 反方向的风险（漏一次锁）由这一轮的分类器兜底。
+        logger.warning("safety_lock_check_failed", request_id=request_id, error=str(exc))
+        return False
+    if locked:
+        logger.info("chat_safety_locked_session", request_id=request_id)
+    return locked
+
+
+async def _lock_session_after_crisis(
+    persistence: ConversationPersistence | None,
+    request: ChatDemoRequest,
+    conversation_id: UUID | None,
+    safety_flag: SafetyReason,
+    request_id: str,
+) -> None:
+    """判出危机之后把会话锁住，让后续每一轮都走同一条路。
+
+    必须在落库**之后**调用——首轮时会话是那一步才创建的。
+    只有危机才锁：普通敏感内容命中的处置是换个话题继续，不是终止陪伴。
+    """
+    if (
+        persistence is None
+        or not request.external_user_id
+        or conversation_id is None
+        or safety_flag != "crisis_keyword"
+    ):
+        return
+    try:
+        await persistence.lock_for_safety(
+            external_user_id=request.external_user_id,
+            conversation_id=conversation_id,
+            risk_level="S3",
+        )
+        logger.info("chat_session_locked", request_id=request_id)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("chat_session_lock_failed", request_id=request_id, error=str(exc))
+
+
+def _care_for(
+    mode: ResponseMode | None, safety_flag: SafetyReason, locked: bool
+) -> CareAffordance:
+    """这一轮要不要显示现实求助入口、显示到什么程度。
+
+    S2 那一档是安静的——一旦变成弹窗或追问，就退化成了 concern 块
+    特意避免的"说破"。
+    """
+    if locked or safety_flag == "crisis_keyword":
+        return affordance_for(risk_level="S3", session_locked=True)
+    return affordance_for(
+        risk_level=risk_level_for(mode) if mode else "S0", session_locked=False
+    )
+
+
+async def _classify_mode_safe(user_text: str, request_id: str) -> ResponseMode | None:
+    """判这一轮的回应模式。开关关闭、或分类出任何问题，一律返回 None。
+
+    返回 None 时下游行为和接入前完全一致（人格 prompt 原样，不加块），
+    所以这条链路不会因为分类器故障而变差——最多是没变好。
+    """
+    if not settings.response_mode_enabled:
+        return None
+    try:
+        mode = await get_response_mode_classifier().classify(user_text)
+    except Exception as exc:  # noqa: BLE001 —— 分类是增强，绝不能拖垮主链路
+        logger.warning("mode_classify_failed", request_id=request_id, error=str(exc))
+        return None
+    logger.info("chat_mode_classified", request_id=request_id, mode=mode.value)
+    return mode
+
+
+def _crisis_as_safety_fallback() -> SafetyResult:
+    """v2 判 crisis 时，复用 safety 命中危机那条路——同一份固定文案、不进 LLM。
+
+    这是有意的：明确说出自伤意图的时候，不该让模型现场发挥。
+    concern（情境暗示、没明说）则相反，走 LLM + concern 块，说些安慰的话。
+    """
+    return SafetyResult(
+        decision="fallback",
+        reason="crisis_keyword",
+        fallback_text=fallback_text_for("crisis_keyword"),
+    )
 
 
 async def handle_chat_demo(
@@ -176,6 +292,19 @@ async def handle_chat_demo(
     request_id = uuid4().hex
 
     safety = await safety_provider.check(request.user_text)
+    mode = None
+    locked = False
+    if safety.allowed:
+        # 会话已锁 → 直接走固定文案，不再判 mode、不进 LLM。
+        locked = await _safety_locked(persistence, request, request_id)
+        if locked:
+            safety = _crisis_as_safety_fallback()
+        else:
+            mode = await _classify_mode_safe(request.user_text, request_id)
+            if mode is ResponseMode.CRISIS:
+                logger.info("chat_mode_crisis_fallback", request_id=request_id)
+                safety = _crisis_as_safety_fallback()
+
     if not safety.allowed:
         logger.info(
             "chat_demo_safety_fallback",
@@ -200,10 +329,16 @@ async def handle_chat_demo(
             request_id=request_id,
             is_mock=is_mock,
             degraded=False,
+            mode=mode,
+        )
+        await _lock_session_after_crisis(
+            persistence, request, conversation_id, safety.reason, request_id
         )
         return ChatDemoResponse(
             reply=safety.fallback_text,
             safety_flag=safety.reason,
+            mode=mode.value if mode else "",
+            care=_care_for(mode, safety.reason, locked),
             is_mock=is_mock,
             request_id=request_id,
             conversation_id=conversation_id,
@@ -220,6 +355,7 @@ async def handle_chat_demo(
                 user_text=request.user_text,
                 history=history,
                 persona=request.persona.value,
+                mode=mode,
             ),
             _detect_emotion_safe(request.user_text, provider),
         )
@@ -254,10 +390,13 @@ async def handle_chat_demo(
             request_id=request_id,
             is_mock=is_mock,
             degraded=False,
+            mode=mode,
         )
         return ChatDemoResponse(
             reply=reply,
             safety_flag="ok",
+            mode=mode.value if mode else "",
+            care=_care_for(mode, safety.reason, locked),
             is_mock=is_mock,
             request_id=request_id,
             conversation_id=conversation_id,
@@ -297,10 +436,13 @@ async def handle_chat_demo(
             request_id=request_id,
             is_mock=True,
             degraded=True,
+            mode=mode,
         )
         return ChatDemoResponse(
             reply=mock_reply,
             safety_flag="ok",
+            mode=mode.value if mode else "",
+            care=_care_for(mode, safety.reason, locked),
             is_mock=True,
             request_id=request_id,
             conversation_id=conversation_id,
@@ -344,6 +486,19 @@ async def stream_chat_demo(
     request_id = uuid4().hex
 
     safety = await safety_provider.check(request.user_text)
+    mode = None
+    locked = False
+    if safety.allowed:
+        # 会话已锁 → 直接走固定文案，不再判 mode、不进 LLM。
+        locked = await _safety_locked(persistence, request, request_id)
+        if locked:
+            safety = _crisis_as_safety_fallback()
+        else:
+            mode = await _classify_mode_safe(request.user_text, request_id)
+            if mode is ResponseMode.CRISIS:
+                logger.info("chat_mode_crisis_fallback", request_id=request_id)
+                safety = _crisis_as_safety_fallback()
+
     if not safety.allowed:
         audio_b64, audio_ct, audio_mock = ("", "audio/mpeg", True)
         if tts_provider:
@@ -376,6 +531,10 @@ async def stream_chat_demo(
             request_id=request_id,
             is_mock=is_mock,
             degraded=False,
+            mode=mode,
+        )
+        await _lock_session_after_crisis(
+            persistence, request, conversation_id, safety.reason, request_id
         )
         yield (
             "data: "
@@ -490,6 +649,7 @@ async def stream_chat_demo(
         request_id=request_id,
         is_mock=response_is_mock,
         degraded=degraded,
+            mode=mode,
     )
     yield (
         "data: "

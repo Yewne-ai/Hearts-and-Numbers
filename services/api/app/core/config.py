@@ -160,6 +160,10 @@ class Settings(BaseSettings):
     sms_resend_cooldown_seconds: int = 60  # 同一手机号防连点
     sms_daily_limit: int = 10  # 单手机号每日最多发送次数
 
+    # 回应模式（v2 分类器 + mode 块）。默认关：打开前需要先定危机流程该做什么。
+    # 关闭时链路和 2026-08-03 移除 scene 之后完全一致，不多一次调用。
+    response_mode_enabled: bool = False
+
     # 登录态 token(服务端存储的随机字符串,不是 JWT,方便主动撤销)
     auth_token_ttl_days: int = 30
 

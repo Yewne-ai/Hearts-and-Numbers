@@ -17,6 +17,8 @@ import httpx
 from app.core.config import settings
 from app.llm.provider import LLMError
 from app.llm import runtime_config
+from app.domain.conversation.modes import ResponseMode
+from app.llm.mode_blocks import compose_system_prompt
 
 # [2026-08-03] 人格 prompt 和采样参数都不在这个文件里了，走 runtime_config：
 #   出厂默认 → app/llm/default_personas.json（defaults.py 读它）
@@ -30,15 +32,29 @@ def _system_prompt_for(persona: str) -> str:
     return runtime_config.get_persona(persona)
 
 
+def _system_prompt_with_mode(persona: str, mode: "ResponseMode | None") -> str:
+    """人格 prompt；给了 mode 就在后面追加对应的回应方式块。
+
+    mode 为 None（开关关闭、或分类失败）时行为和以前完全一致。
+    块必须拼在人格**后面**——2026-08-09 实测模型会听更近的那条：线上人格写着
+    "情绪支持 4 到 7 句"，而 vent 块要求说完一句就停，拼在后面时块赢。
+    """
+    base = _system_prompt_for(persona)
+    if mode is None:
+        return base
+    return compose_system_prompt(base, persona, mode)
+
+
 class DeepSeekProvider:
     async def complete(
         self,
         user_text: str,
         history: list[dict] | None = None,
         persona: str = "nini",
+        mode: ResponseMode | None = None,
     ) -> str:
         messages: list[dict] = [
-            {"role": "system", "content": _system_prompt_for(persona)}
+            {"role": "system", "content": _system_prompt_with_mode(persona, mode)}
         ]
         if history:
             messages.extend(history)
@@ -93,9 +109,12 @@ class DeepSeekProvider:
         user_text: str,
         history: list[dict] | None = None,
         persona: str = "nini",
+        mode: ResponseMode | None = None,
     ) -> AsyncGenerator[str, None]:
         """流式输出 token，逐个 yield。"""
-        messages: list[dict] = [{"role": "system", "content": _system_prompt_for(persona)}]
+        messages: list[dict] = [
+            {"role": "system", "content": _system_prompt_with_mode(persona, mode)}
+        ]
         if history:
             messages.extend(history)
         messages.append({"role": "user", "content": user_text})
@@ -120,8 +139,12 @@ class DeepSeekProvider:
         url = f"{settings.deepseek_base_url}/chat/completions"
 
         try:
-            async with httpx.AsyncClient(timeout=settings.llm_timeout_seconds) as client:
-                async with client.stream("POST", url, headers=headers, json=payload) as response:
+            async with httpx.AsyncClient(
+                timeout=settings.llm_timeout_seconds
+            ) as client:
+                async with client.stream(
+                    "POST", url, headers=headers, json=payload
+                ) as response:
                     if response.status_code != 200:
                         await response.aread()
                         raise LLMError(

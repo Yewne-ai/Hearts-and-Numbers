@@ -6,6 +6,12 @@
 """
 
 from app.core.config import settings
+from app.domain.conversation.modes import ResponseMode  # noqa: F401
+from app.llm.classifier_v2 import (
+    DeepSeekResponseModeClassifier,
+    MockResponseModeClassifier,
+    ResponseModeClassifier,
+)
 from app.llm.deepseek import DeepSeekProvider
 from app.llm.provider import LLMProvider, MockProvider
 
@@ -18,3 +24,14 @@ def get_llm_provider() -> tuple[LLMProvider, bool]:
     if _use_real_llm():
         return DeepSeekProvider(), False
     return MockProvider(), True
+
+
+def get_response_mode_classifier() -> ResponseModeClassifier:
+    """回应模式分类器。无 key 时退回关键词版，保证 dev 不炸。
+
+    调用方要自己看 `settings.response_mode_enabled`——工厂只负责给实例，
+    不决定要不要用。
+    """
+    if _use_real_llm():
+        return DeepSeekResponseModeClassifier()
+    return MockResponseModeClassifier()
