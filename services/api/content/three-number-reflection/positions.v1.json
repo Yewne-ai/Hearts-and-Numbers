@@ -1,0 +1,35 @@
+[
+  {
+    "id": "position-origin-v1",
+    "index": 0,
+    "method_version": "xlr-six-palace-v1",
+    "corpus_version": "2026-08-v1",
+    "name": "起势",
+    "explanation_task": "说明用户为什么会在此刻提出问题",
+    "required_elements": ["当前触发点", "问题底色", "可能的情绪需要"],
+    "forbidden_content": ["对他人内心的断言"],
+    "review_status": "internal-reviewed"
+  },
+  {
+    "id": "position-process-v1",
+    "index": 1,
+    "method_version": "xlr-six-palace-v1",
+    "corpus_version": "2026-08-v1",
+    "name": "过程",
+    "explanation_task": "说明问题如何被关系、环境或行为维持",
+    "required_elements": ["互动模式", "阻力", "可观察事实"],
+    "forbidden_content": ["虚构未来事件"],
+    "review_status": "internal-reviewed"
+  },
+  {
+    "id": "position-present-v1",
+    "index": 2,
+    "method_version": "xlr-six-palace-v1",
+    "corpus_version": "2026-08-v1",
+    "name": "当下",
+    "explanation_task": "说明此刻值得优先处理的部分",
+    "required_elements": ["可控因素", "现实小行动", "不确定性"],
+    "forbidden_content": ["替用户做最终决定"],
+    "review_status": "internal-reviewed"
+  }
+]
