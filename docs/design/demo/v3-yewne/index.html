@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F5F6">
+<title>于你 Yewne · V3</title>
+<style>
+/* ============================================================
+   于你 Yewne — Demo V3
+
+   气质：清冷、克制、印刷逻辑。
+   参照 Co-Star 的 register（临床精度呈现非临床内容），
+   但换掉表皮：黑底 → 冷近白；西方拼贴 → 六宫记号；
+   刻薄断言 → 克制不冷的语气；身份叙事 → 处境叙事。
+
+   色彩策略：
+     主界面全墨，零彩色。
+     颜色只出现在「你带走的东西」上 —— Aftercare 与心事地图的宣纸卡。
+     冷白 = 在分析、在理清；宣纸 = 这是你可以拿走的。
+     视觉温差对应真实的功能差别。
+   ============================================================ */
+
+:root{
+  /* 冷近白：几乎零彩度，略偏冷。不是奶油白。 */
+  --bg:        #F4F5F6;
+  --ink:       #14161A;
+  --ink-2:     #4A5058;
+  /* 三级墨：原 #8B9199 在冷白上只有 2.9:1，小字达不到 WCAG AA 的 4.5。
+     压到 #6B7079 = 4.6:1，仍明显弱于 --ink-2，层级没丢。 */
+  --ink-3:     #6B7079;
+  --rule:      #DCDEE2;
+  --rule-2:    #EAEBEE;
+
+  /* 宣纸：偏灰的象牙，色相往黄绿而不是橙黄，明度压低一档。
+     真实生宣不是金黄的，那是做旧仿古纸。 */
+  --xuan:      #ECE8DB;
+  --xuan-rule: #D6D0BE;
+  --xuan-ink:  #2A2721;
+  --xuan-ink2: #5F5A4C;
+  --xuan-ink3: #6E6857;   /* 同理：原 #8C8676 在宣纸上 3.0:1 → 现 4.6:1 */
+
+  --serif: Georgia, "Times New Roman", "Songti SC", STSong, SimSun, serif;
+  /* Georgia 用的是旧式数字：6/8 上伸、3/4/5/7/9 下沉，只有 0/1/2 齐 x 高。
+     并排成一列（1–6 刻度）时会看着高低不齐。
+     Georgia 没有 lnum 特性，font-variant-numeric 救不了，只能换字体。
+     Times 是等高数字，六个数字顶边完全对齐。只用于阿拉伯数字。 */
+  --serif-num: "Times New Roman", Times, "Songti SC", STSong, SimSun, serif;
+  --sans:  -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+           "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --mono:  ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+           "PingFang SC", monospace;
+
+  --pad: 26px;
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; padding:0; }
+/* 标题只提供语义层级，外观完全交给 class */
+h1,h2,h3{ margin:0; font-size:inherit; font-weight:inherit; line-height:inherit; }
+/* 只给屏幕阅读器 */
+.sr{ position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+     overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+body{
+  font-family:var(--sans); -webkit-font-smoothing:antialiased;
+  background:#E2E4E7;
+  display:flex; align-items:center; justify-content:center;
+  min-height:100vh; min-height:100dvh; overflow:hidden;
+}
+
+/* ---------- 手机外框 ---------- */
+.phone{ position:relative; flex:none; transform-origin:center center; }
+.sidebtn{ position:absolute; background:#232325; border-radius:2px; }
+.sb-l1{ left:-13px; top:150px; width:3px; height:26px; }
+.sb-l2{ left:-13px; top:205px; width:3px; height:52px; }
+.sb-l3{ left:-13px; top:266px; width:3px; height:52px; }
+.sb-r1{ right:-13px; top:230px; width:3px; height:78px; }
+.device{
+  width:390px; height:844px; background:var(--bg);
+  border-radius:54px; border:11px solid #17171a;
+  box-shadow:0 0 0 2px #3c3c40, 0 36px 80px rgba(20,22,26,.28);
+  position:relative; overflow:hidden;
+}
+.island{ position:absolute; top:11px; left:50%; transform:translateX(-50%);
+  width:122px; height:34px; background:#000; border-radius:20px; z-index:60; }
+.island::after{ content:""; position:absolute; right:13px; top:11.5px; width:11px; height:11px;
+  border-radius:50%; background:radial-gradient(circle at 35% 35%, #2b3040 0%, #06080c 70%); }
+.homebar{ position:absolute; bottom:9px; left:50%; transform:translateX(-50%);
+  width:140px; height:5px; border-radius:3px; background:rgba(20,22,26,.82); z-index:60; pointer-events:none; }
+
+/* ---------- 屏幕 ---------- */
+.screen{ position:absolute; inset:0; display:none; flex-direction:column;
+  background:var(--bg); overflow:hidden; }
+.screen.on{ display:flex; animation:in .3s cubic-bezier(.22,1,.36,1) both; }
+@keyframes in{ from{ opacity:0 } to{ opacity:1 } }
+
+.statusbar{ height:56px; flex:none; display:flex; align-items:flex-end; justify-content:space-between;
+  padding:0 32px 8px 36px; color:var(--ink); font-size:15.5px; font-weight:600;
+  font-family:var(--sans); }
+.statusbar .sb-right{ display:flex; align-items:center; gap:6px; }
+
+.body{ flex:1; min-height:0; display:flex; flex-direction:column;
+  overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.body::-webkit-scrollbar{ display:none; }
+
+/* ============================================================
+   印刷排版基元
+   ============================================================ */
+.rule{ height:1px; background:var(--rule); flex:none; }
+.rule.light{ background:var(--rule-2); }
+
+/* 眉头：左为上下文返回，右为常驻「主页」入口。
+   用一个链接换掉一整条底部 tab 栏 —— 更省，也更像书。 */
+.masthead{
+  flex:none; display:flex; align-items:center; justify-content:space-between; gap:9px;
+  padding:4px var(--pad) 12px;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.14em;
+  color:var(--ink-3); text-transform:uppercase;
+}
+.masthead .mark{ flex:none; color:var(--ink); }
+.masthead .meta{ letter-spacing:.1em; }
+.masthead .grp{ display:flex; align-items:center; gap:9px; }
+
+.back{
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.14em;
+  color:var(--ink-3); background:none; border:0; padding:0; cursor:pointer;
+  text-transform:uppercase;
+}
+.back:active{ color:var(--ink); }
+
+.sec{ padding:0 var(--pad); }
+
+/* 宋体大字：唯一的「声音」 */
+.display{
+  font-family:var(--serif); font-weight:400;
+  font-size:31px; line-height:1.58; letter-spacing:.01em;
+  color:var(--ink); text-wrap:balance;
+}
+.display.sm{ font-size:24px; line-height:1.6; }
+
+.label{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.16em;
+  color:var(--ink-3); text-transform:uppercase;
+}
+.copy{ font-size:14.5px; line-height:1.85; color:var(--ink-2); letter-spacing:.01em; }
+.copy.sm{ font-size:12.5px; line-height:1.8; color:var(--ink-3); }
+
+/* 文字型主操作：链接，不是按钮 */
+.act{
+  display:inline-flex; align-items:baseline; gap:9px;
+  font-family:var(--serif); font-size:19px; color:var(--ink);
+  background:none; border:0; padding:0; cursor:pointer;
+  border-bottom:1px solid var(--ink); padding-bottom:4px;
+  transition:opacity .15s;
+}
+.act:active{ opacity:.45; }
+.act .arw{ font-family:var(--mono); font-size:14px; }
+.act:disabled{ opacity:.22; cursor:not-allowed; }
+.act.quiet{ font-family:var(--mono); font-size:11px; letter-spacing:.14em;
+  color:var(--ink-3); border-bottom-color:var(--rule); text-transform:uppercase; }
+
+/* 实心墨块主操作：满幅、直角、无阴影。
+   印刷逻辑里没有按钮，但有实心墨条 —— 比蓝色圆角按钮更重，也更克制。
+   未就绪时只有一圈线，就绪时灌满墨。第三个数字落定的那一下就是这个动作。 */
+.blk{
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; padding:19px var(--pad);
+  font-family:var(--serif); font-size:18.5px; letter-spacing:.01em;
+  background:transparent; color:var(--ink);
+  border:0; box-shadow:inset 0 0 0 1px var(--ink);
+  cursor:pointer; text-align:left;
+  transition:background .22s cubic-bezier(.22,1,.36,1), color .22s;
+}
+.blk .arw{ font-family:var(--mono); font-size:15px; }
+.blk.ready{ background:var(--ink); color:var(--bg); box-shadow:none; }
+.blk.ready:active{ background:var(--ink-2); }
+.blk:disabled{ color:var(--ink-3); box-shadow:inset 0 0 0 1px var(--rule); cursor:not-allowed; }
+
+/* ============================================================
+   屏 0 · 主页
+   首屏满高：「开始」贴在视口底部，AI 说明落到折叠线以下，下滑才见。
+   ============================================================ */
+.page{ flex:none; min-height:100%; display:flex; flex-direction:column; }
+
+/* 每日一句 + 展开 + 今天可以/先别。
+   结构借自 Co-Star 的首页：标签 → 大字引句 → 正文 → 两列短清单。
+   不是运势、不是鸡汤 —— 是一句观察加两组行为提示。 */
+/* 整页按「首屏正好装下、开始贴底」调校（390×844 基准）。
+   引句收到 23.5px —— 仍是全页最大的声音，但不再独占半屏。 */
+/* 首屏三层：安静的今日引句（氛围）→ 主张大字（主角）→ 两扇门（去处）。
+   引句退为氛围，中段的「空」交给主张与六宫几何 —— 空白变成舞台。 */
+.quote{ padding:26px var(--pad) 0; }
+.quote .lb{ margin-bottom:14px; }
+.q-sm{
+  margin:0; font-family:var(--serif); font-size:15px; line-height:1.95;
+  letter-spacing:.02em; color:var(--ink-2); max-width:19em; text-wrap:pretty;
+}
+
+/* 主张：文档 §3.4 的主传播语，首页的主角 */
+.hero{ position:relative; flex:1; display:flex; align-items:center;
+  padding:30px var(--pad); min-height:220px; overflow:hidden; }
+.hero .ht{
+  position:relative; z-index:1;
+  font-family:var(--serif); font-weight:400; font-size:36px; line-height:1.62;
+  letter-spacing:.02em; color:var(--ink); text-wrap:balance;
+}
+/* 六宫几何：一个环，环上六种状态 —— 于你的「星盘」。
+   纯装饰、极淡、从右侧出血；关掉它信息一分不少。
+
+   转起来：120 秒一圈，边缘珠速约 8px/s ——
+   盯着看得出在动，不看时察觉不到。串本来就是转着数的。
+   珠子随线一起转（不做反向补偿）：真实的手串就是这样。
+   离开首页时该屏 display:none，动画自动暂停，不耗电。 */
+.ring{
+  position:absolute; right:-118px; top:50%;
+  transform:translateY(-50%); transform-origin:center;
+  pointer-events:none; z-index:0;
+  animation:turn 120s linear infinite;
+}
+@keyframes turn{
+  from{ transform:translateY(-50%) rotate(0deg); }
+  to  { transform:translateY(-50%) rotate(360deg); }
+}
+
+/* 两列：可以 / 先别。衬线列项，无项目符号 */
+.dodont{
+  display:grid; grid-template-columns:1fr 1fr; gap:0 18px;
+  padding:34px var(--pad) 34px;
+}
+.dodont .dl{ margin-bottom:13px; }
+.dodont .di{
+  font-family:var(--serif); font-size:17px; line-height:2;
+  color:var(--ink); letter-spacing:.01em;
+}
+.dodont .col:last-child .di{ color:var(--ink-2); }
+/* 来源说明：这两列是编辑内容，不是算出来的。
+   不写清楚，用户会当成占问结果 —— 那就回到吉凶断言了。 */
+.dd-src{ grid-column:1 / -1; margin-top:20px; }
+
+/* 阅读区（引句 + 两列）吸收首屏的剩余空间。
+   两扇门保持固定的舒适高度，不再被撑大；
+   多出来的空隙落在「读完」和「去哪」之间，是个自然的段落间隔。 */
+.reading{ flex:1; display:flex; flex-direction:column; }
+.doors{ flex:none; }
+
+.toc{ width:100%; display:flex; align-items:center; gap:16px;
+  padding:24px var(--pad); background:none; border:0; cursor:pointer;
+  font-family:inherit; text-align:left; transition:background .12s; }
+.toc:active{ background:rgba(20,22,26,.05); }
+.toc .tx{ flex:1; min-width:0; }
+.toc .t{ display:block; font-family:var(--serif); font-size:21px; color:var(--ink); }
+.toc .d{ display:block; font-size:12px; color:var(--ink-3); margin-top:6px; line-height:1.6; }
+.toc .arw{ flex:none; font-family:var(--mono); font-size:14px; color:var(--ink-3); }
+
+
+/* 矮屏（iPhone SE 一档）收紧，让「开始」仍能落在首屏内 */
+@media (max-height:740px){
+  .quote{ padding-top:18px; }
+  .hero{ min-height:170px; padding-top:20px; padding-bottom:20px; }
+  .hero .ht{ font-size:29px; }
+  .ring{ width:260px; height:260px; right:-96px; }
+  .toc{ padding:16px var(--pad); }
+  .toc .t{ font-size:19px; }
+  .blk{ padding:16px var(--pad); font-size:17px; }
+}
+
+/* 折叠线以下的页脚：定位与 AI 身份说明退到这里，不抢首屏 */
+.colofoot{ padding:30px var(--pad) 38px; }
+.colofoot .nm{ font-family:var(--serif); font-size:17px; color:var(--ink); margin-bottom:12px; }
+.colofoot .copy{ margin-bottom:18px; }
+
+/* 六宫记号 */
+.gl{ display:inline-block; vertical-align:-3px; }
+.sig{ display:inline-flex; align-items:center; font-size:0; }
+
+/* ============================================================
+   屏 1 · 三数
+   ============================================================ */
+.n-head{ padding:34px var(--pad) 0; }
+.n-sub{ margin-top:16px; max-width:15em; }
+
+/* 三数 = 三颗珠子上线。
+   线是连续的（这件事一直在），珠是离散的（一颗一颗地报）。
+   第三颗落定时，线由虚转实 —— 串成了。
+   取的是「珠+线」这个计数结构，不取任何宗教标记。 */
+.slots{ display:flex; gap:0; padding:52px var(--pad) 0; position:relative; }
+.slots::before, .slots::after{
+  /* 珠心 = slots 上内边距 52 + 数字区 52 + 珠上边距 14 + 珠半径 5.5 */
+  content:''; position:absolute; left:16.667%; right:16.667%; top:123.5px; height:1px;
+}
+.slots::before{ background:var(--rule); }              /* 线一直在 */
+.slots::after{ background:var(--ink); transform:scaleX(0); transform-origin:left;
+  transition:transform .64s cubic-bezier(.42,0,.22,1); }
+.slots.done::after{ transform:scaleX(1); }             /* 穿线：由左向右走过三颗珠 */
+
+/* 珠子三态。三层 inset 阴影在每一态都保留，才能平滑插值：
+     空    外圈灰线，中空
+     选中  双层空心圆（珠子已在，还没串上）
+     串成  线穿过时，从外到内灌满 —— 一颗一颗地黑 */
+.bead{
+  position:relative; z-index:1; width:13px; height:13px; border-radius:50%;
+  margin:13px auto 0; background:var(--bg);
+  box-shadow:
+    inset 0 0 0 1.3px var(--rule),
+    inset 0 0 0 2.9px var(--bg),
+    inset 0 0 0 4.2px var(--bg);
+  transition:background .26s cubic-bezier(.22,1,.36,1),
+             box-shadow .26s cubic-bezier(.22,1,.36,1);
+}
+.slot.set .bead{
+  box-shadow:
+    inset 0 0 0 1.3px var(--ink),
+    inset 0 0 0 2.9px var(--bg),
+    inset 0 0 0 4.2px var(--ink);
+}
+.slots.done .slot .bead{
+  background:var(--ink);
+  box-shadow:
+    inset 0 0 0 1.3px var(--ink),
+    inset 0 0 0 2.9px var(--ink),
+    inset 0 0 0 4.2px var(--ink);
+}
+/* 珠子在线上的位置 = 0% / 50% / 100%，延迟跟着线头走 */
+.slots.done .slot:nth-child(1) .bead{ transition-delay:.04s; }
+.slots.done .slot:nth-child(2) .bead{ transition-delay:.26s; }
+.slots.done .slot:nth-child(3) .bead{ transition-delay:.48s; }
+
+.slot{ flex:1; text-align:center; position:relative; }
+.slot .num{
+  font-family:var(--serif-num); font-size:46px; line-height:1;
+  color:var(--ink); height:52px; display:flex; align-items:flex-end;
+  justify-content:center; padding-bottom:6px;
+}
+.slot .num:empty::after{ content:""; }
+.slot.set .num{ animation:land .28s cubic-bezier(.22,1,.36,1); }
+@keyframes land{ from{ opacity:0; transform:translateY(7px) } to{ opacity:1; transform:none } }
+.slot .ord{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.16em;
+  color:var(--ink-3); margin-top:12px; text-transform:uppercase;
+}
+.slot.set .ord{ color:var(--ink-2); }
+
+/* 1–6：印刷刻度，不是键盘 */
+.scale{ margin-top:46px; }
+.scale .row{ display:flex; }
+.digit{
+  flex:1; font-family:var(--serif-num); font-size:26px; color:var(--ink);
+  background:none; border:0; cursor:pointer; padding:17px 0;
+  transition:background .12s, color .12s;
+}
+.digit:active{ background:var(--ink); color:var(--bg); }
+.scale.done .digit{ color:var(--ink-3); }
+
+.n-foot{ padding:22px var(--pad) 28px; display:flex; align-items:center; gap:20px; }
+
+/* 心事输入：三珠串成之后才出现。
+   先做完低门槛的仪式，再开口 —— 三个数字是那只先伸进门的脚。
+   始终占位（只动透明度与位移），所以出现时不会顶动版面。 */
+.ask{
+  padding:0 var(--pad) 4px;
+  opacity:0; transform:translateY(8px); pointer-events:none;
+  transition:opacity .5s ease, transform .5s cubic-bezier(.22,1,.36,1);
+}
+.ask.on{ opacity:1; transform:none; pointer-events:auto; }
+.ask .label{ display:block; margin-bottom:14px; }
+.ask textarea{
+  display:block; width:100%; min-height:58px;
+  border:0; border-bottom:1px solid var(--rule); border-radius:0;
+  background:none; outline:none; resize:none;
+  font-family:var(--serif); font-size:18px; line-height:1.78;
+  color:var(--ink); letter-spacing:.01em; padding:0 0 12px;
+  transition:border-color .25s;
+}
+.ask textarea:focus{ border-bottom-color:var(--ink); }
+.ask textarea::placeholder{ color:var(--ink-3); }
+
+details.method{ padding:0 var(--pad) 30px; }
+details.method summary{
+  list-style:none; cursor:pointer;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.14em;
+  color:var(--ink-3); text-transform:uppercase; padding:4px 0;
+}
+details.method summary::-webkit-details-marker{ display:none; }
+details.method summary::after{ content:" +"; }
+details.method[open] summary::after{ content:" −"; }
+details.method .copy{ margin-top:12px; padding-top:14px; border-top:1px solid var(--rule-2); }
+
+/* ============================================================
+   屏 2 · 结果
+   ============================================================ */
+.r-summary{ padding:30px var(--pad) 32px; }
+.r-worry{ margin-bottom:18px; }
+.pos{ padding:22px var(--pad) 24px; }
+.pos .top{ display:flex; align-items:center; margin-bottom:14px; }
+.pos .pn{ font-family:var(--serif); font-size:16px; color:var(--ink); margin-left:auto;
+  display:flex; align-items:center; gap:10px; }
+.trans{ padding:0 var(--pad) 22px; }
+.trans .t{ font-size:12.5px; line-height:1.8; color:var(--ink-3);
+  padding-left:16px; border-left:1px solid var(--rule); }
+.r-foot{ padding:24px var(--pad) 34px; }
+.colophon{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.12em;
+  color:var(--ink-3); text-transform:uppercase; margin-top:28px; line-height:1.9;
+}
+
+/* ============================================================
+   屏 3 · Aftercare —— 宣纸
+   纸卡从屏幕边缘内缩，四周露出冷白。
+   不做纹理：屏幕上的纸纹几乎都会翻车，且吃正文对比度。
+   纸感来自颜色、内缩、以及卡内的印刷逻辑。
+   ============================================================ */
+.card{
+  margin:8px var(--pad) 0; background:var(--xuan);
+  border:1px solid var(--xuan-rule);
+  padding:24px 22px 26px; color:var(--xuan-ink);
+}
+.card .crule{ height:1px; background:var(--xuan-rule); margin:20px 0; }
+.card .crule.tight{ margin:16px 0; }
+.card .clabel{
+  font-family:var(--mono); font-size:10px; letter-spacing:.16em;
+  color:var(--xuan-ink3); text-transform:uppercase; margin-bottom:10px;
+}
+.card .cbig{ font-family:var(--serif); font-size:21px; line-height:1.62; color:var(--xuan-ink); }
+.card .cbody{ font-size:14px; line-height:1.85; color:var(--xuan-ink2); }
+.card .csig{ display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+.card .cnames{ font-family:var(--mono); font-size:10px; letter-spacing:.14em; color:var(--xuan-ink3); }
+[contenteditable="true"]{ outline:none; background:rgba(20,22,26,.05);
+  box-shadow:0 0 0 1px var(--xuan-rule); }
+.edit{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--xuan-ink3); background:none; border:0; cursor:pointer; padding:0; float:right;
+}
+details.fold summary{
+  list-style:none; cursor:pointer; font-family:var(--mono); font-size:10px;
+  letter-spacing:.16em; color:var(--xuan-ink3); text-transform:uppercase; padding:2px 0;
+}
+details.fold summary::-webkit-details-marker{ display:none; }
+details.fold summary::after{ content:" +"; }
+details.fold[open] summary::after{ content:" −"; }
+.sub{ padding:14px 0 0; }
+.sub .k{ font-family:var(--mono); font-size:9.5px; letter-spacing:.14em;
+  color:var(--xuan-ink3); text-transform:uppercase; margin-bottom:6px; }
+.sub .v{ font-size:13px; line-height:1.8; color:var(--xuan-ink2); }
+.sub + .sub{ margin-top:16px; padding-top:16px; border-top:1px solid var(--xuan-rule); }
+
+/* 反馈与操作留在冷白上 —— 纸 = 你带走的内容，冷白 = 系统 */
+.fb{ display:flex; flex-wrap:wrap; gap:0; margin-top:14px; border-top:1px solid var(--rule); }
+.fbb{
+  flex:1 0 50%; font-family:var(--sans); font-size:12.5px; color:var(--ink-2);
+  background:none; border:0; border-bottom:1px solid var(--rule); cursor:pointer;
+  padding:14px 4px; text-align:left; transition:color .12s;
+}
+.fbb:nth-child(odd){ border-right:1px solid var(--rule); padding-left:0; }
+.fbb:nth-child(even){ padding-left:14px; }
+.fbb.sel{ color:var(--ink); font-weight:600; }
+.fbb.sel::before{ content:"— "; }
+
+/* ============================================================
+   屏 4 · 心事地图
+   Co-Star 那张细线表格就是原型：一行一个主题，后面跟它的记号。
+   ============================================================ */
+.m-head{ padding:30px var(--pad) 22px; }
+.m-count{ margin-top:12px; }
+.theme{
+  margin:0 var(--pad) 14px; background:var(--xuan);
+  border:1px solid var(--xuan-rule); padding:18px 18px 20px; cursor:pointer;
+}
+.theme .th{ display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+.theme .tt{ font-family:var(--serif); font-size:18px; line-height:1.5;
+  color:var(--xuan-ink); margin-bottom:8px; }
+.theme .tm{ font-family:var(--mono); font-size:9.5px; letter-spacing:.13em;
+  color:var(--xuan-ink3); text-transform:uppercase; }
+.theme .tl{ margin-top:15px; padding-top:15px; border-top:1px solid var(--xuan-rule); }
+.theme .li{ font-size:12.5px; line-height:1.8; color:var(--xuan-ink2); }
+.theme .li + .li{ margin-top:7px; }
+.theme .li b{ font-weight:600; color:var(--xuan-ink); }
+.review{ padding:26px var(--pad) 0; }
+.empty{ padding:80px var(--pad); text-align:center; }
+.empty .bm{ color:var(--ink-3); }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="sidebtn sb-l1"></div><div class="sidebtn sb-l2"></div>
+  <div class="sidebtn sb-l3"></div><div class="sidebtn sb-r1"></div>
+
+  <div class="device">
+    <div class="island"></div><div class="homebar"></div>
+
+    <!-- ===================== 屏 0 · 主页 ===================== -->
+    <section class="screen on" id="s-index">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+
+        <!-- 首屏：满高，「开始」贴底 -->
+        <div class="page">
+          <div class="masthead">
+            <span class="grp"><span class="mark" data-mark="listen"></span><span>Yewne</span></span>
+          </div>
+          <div class="rule"></div>
+
+          <div class="reading">
+            <div class="quote">
+              <div class="label lb" id="qLabel">今日</div>
+              <p class="q-sm" id="qText"></p>
+            </div>
+
+            <div class="hero">
+              <svg class="ring" width="340" height="340" viewBox="0 0 340 340" fill="none" aria-hidden="true">
+                <circle cx="170" cy="170" r="150" stroke="#D6DAE1"/>
+                <g stroke="#C6CBD4" stroke-width="1.5">
+                  <circle cx="170" cy="20" r="5.5" fill="#C6CBD4" stroke="none"/>
+                  <circle cx="299.9" cy="95" r="5.5"/><circle cx="299.9" cy="95" r="2" fill="#C6CBD4" stroke="none"/>
+                  <path d="M295.4 239.4 306.4 245 295.4 250.6Z" fill="#C6CBD4" stroke="none"/>
+                  <path d="M167 312.5v7.5M173 320v7.5"/>
+                  <circle cx="40.1" cy="245" r="5.5"/><path d="M40.1 239.5a5.5 5.5 0 0 1 0 11Z" fill="#C6CBD4" stroke="none"/>
+                  <circle cx="40.1" cy="95" r="5.5"/>
+                </g>
+              </svg>
+              <h1 class="ht">想不明白，<br>先报三个数。</h1>
+            </div>
+          </div>
+
+          <div class="rule"></div>
+          <div class="doors">
+            <button class="toc" data-go="num">
+              <span class="tx"><h2 class="t">三数问心</h2><span class="d">把一件心事聊清楚</span></span>
+              <span class="arw">→</span>
+            </button>
+            <div class="rule light"></div>
+            <button class="toc" data-seed data-go="map">
+              <span class="tx"><h2 class="t">心事地图</h2><span class="d">反复出现的主题与变化</span></span>
+              <span class="arw">→</span>
+            </button>
+          </div>
+          <div class="rule"></div>
+        </div>
+
+        <!-- 折叠线以下：今日的余下部分 + 定位与 AI 身份说明（§4.2） -->
+        <div class="dodont">
+          <div class="col">
+            <h2 class="label dl">可以</h2>
+            <div id="qCan"></div>
+          </div>
+          <div class="col">
+            <h2 class="label dl">先别</h2>
+            <div id="qHold"></div>
+          </div>
+          <div class="label dd-src">于你整理，不是占问结果</div>
+        </div>
+        <div class="rule light" style="margin:0 var(--pad)"></div>
+        <div class="colofoot">
+          <div class="nm">于你 Yewne</div>
+          <div class="copy">面向成年人的 AI 情绪陪伴与自我探索。从三个数字和一件具体心事开始，陪你看见当下、把问题聊清楚。</div>
+          <div class="copy sm">回应由 AI 生成，仅供参考。不提供医疗、法律或金融建议，重要决定请结合现实信息并咨询可信任的人。</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 屏 1 · 三数 ===================== -->
+    <section class="screen" id="s-num">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="masthead">
+          <span class="grp"><span class="mark" data-mark="listen"></span><span class="meta" id="numMeta">— — —</span></span>
+          <button class="back" data-go="index">主页</button>
+        </div>
+        <div class="rule"></div>
+
+        <div class="n-head">
+          <h1 class="display">想三个数。</h1>
+          <div class="copy n-sub">心里想着那件事。不用纠结选哪个，也不用重来。</div>
+        </div>
+
+        <div class="slots" id="slots">
+          <div class="slot"><div class="num"></div><div class="bead"></div><div class="ord">其一</div></div>
+          <div class="slot"><div class="num"></div><div class="bead"></div><div class="ord">其二</div></div>
+          <div class="slot"><div class="num"></div><div class="bead"></div><div class="ord">其三</div></div>
+        </div>
+
+        <div class="scale" id="scale">
+          <div class="rule"></div>
+          <div class="row" id="digits"></div>
+          <div class="rule"></div>
+        </div>
+
+        <div class="n-foot">
+          <button class="act quiet" id="resetNum">重选</button>
+        </div>
+
+        <div class="ask" id="askBlock">
+          <label class="label" for="worry">你想问的是</label>
+          <textarea id="worry" rows="2" maxlength="200"
+            placeholder="比如：我不知道该不该继续等他。"></textarea>
+        </div>
+
+        <details class="method">
+          <summary>这三个数字怎么用</summary>
+          <!-- 中文之间不能换行：HTML 会把换行折叠成一个空格，中文里那就是个错别字 -->
+          <div class="copy sm">三数问心参考公开常见的小六壬六宫顺推方式，由于你定义固定的产品算法。它提供一种传统文化启发的观察角度，用于自我反思和对话起点，不构成对未来的确定预测。同一组数字在任何模型版本下结果都不变。</div>
+        </details>
+
+        <!-- 墨块贴底，与主页的「开始」同一位置 -->
+        <div style="margin-top:auto">
+          <div class="rule"></div>
+          <button class="blk" id="toReading" disabled>看结果<span class="arw">→</span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 屏 2 · 结果 ===================== -->
+    <section class="screen" id="s-read">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="masthead">
+          <button class="back" data-go="num">← 重选</button>
+          <span class="grp"><span class="meta" id="readMeta"></span><button class="back" data-go="index">主页</button></span>
+        </div>
+        <div class="rule"></div>
+        <div id="readBody"></div>
+      </div>
+    </section>
+
+    <!-- ===================== 屏 3 · Aftercare ===================== -->
+    <section class="screen" id="s-after">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="masthead">
+          <button class="back" data-go="read">← 返回</button>
+          <span class="grp"><span class="meta">AI 辅助生成</span><button class="back" data-go="index">主页</button></span>
+        </div>
+        <h1 class="sr">Aftercare</h1>
+        <div class="rule"></div>
+        <div id="afterBody"></div>
+      </div>
+    </section>
+
+    <!-- ===================== 屏 4 · 心事地图 ===================== -->
+    <section class="screen" id="s-map">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="masthead">
+          <button class="back" data-go="after">← 返回</button>
+          <span class="grp"><span class="meta" id="mapMeta"></span><button class="back" data-go="index">主页</button></span>
+        </div>
+        <div class="rule"></div>
+        <div id="mapBody"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script type="module">
+/* 算法与语料来自 V2 —— 同一个引擎，两套呈现。
+   这正是文档 §0.1「三数结果由确定性引擎计算，解释层无权修改」的演示。 */
+import { buildReading, METHOD_VERSION, CORPUS_VERSION } from '../v2-product/corpus.js';
+import { glyph, signature, PAPER_INK } from './notation.js';
+
+const S = { nums: [], worry: '', reading: null, saved: false };
+/* hash 直达（#read / #after / #map）时用它铺一份演示上下文 */
+const SAMPLE_WORRY = '我不知道该不该继续等他。';
+const worryText = () => S.worry.trim();
+
+/* ---------- 状态栏 ---------- */
+document.querySelectorAll('[data-sb]').forEach(n => n.innerHTML = `
+<svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect y="7.5" width="3" height="4.5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" width="3" height="12" rx="1"/></svg>
+<svg width="18" height="13" viewBox="0 0 20 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.2 5.2a12 12 0 0 1 15.6 0"/><path d="M5.5 8.7a7 7 0 0 1 9 0"/><circle cx="10" cy="12" r="1.7" fill="currentColor" stroke="none"/></svg>
+<svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="21" height="11" rx="3.4" fill="none" stroke="currentColor" stroke-opacity=".4"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><path d="M23.5 4v4a2.2 2.2 0 0 0 0-4Z" fill="currentColor" fill-opacity=".4"/></svg>`);
+
+/* ---------- 品牌记号：抽象、有状态、关掉不影响界面 ---------- */
+const MARK = {
+  listen: '<circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>',
+  think:  '<circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="1.6 2.6"/>',
+  hold:   '<circle cx="7" cy="7" r="6" fill="currentColor"/>',
+};
+function setMark(state){
+  document.querySelectorAll('[data-mark]').forEach(n =>
+    n.innerHTML = `<svg width="14" height="14" viewBox="0 0 14 14">${MARK[state]}</svg>`);
+}
+setMark('listen');
+
+/* ============================================================
+   每日一句
+   不是运势，不是鸡汤 —— 是一句观察。
+   语气跟着 §6.1 的 AI 人格：温暖但不甜腻，确定但不武断。
+   不给指令（「你应该…」），只描述一种常见的心理处境，
+   让用户自己认领。这也是 §4.5「先承接，再解释」在文案上的样子。
+
+   现在只有一条。运营补内容时往数组里加即可，按日轮换已经接好。
+   ============================================================ */
+/* 「可以 / 先别」刻意不写作「宜 / 忌」——那是黄历语言，
+   会把产品推回吉凶断言（§1.3 不做确定性承诺、核心风险第 6 条）。
+   这两列是行为提示，不是运势；「先别」带临时性，选择权仍在用户。
+   它们也不跟三数结果挂钩：是编辑内容，不是算出来的。 */
+const DAILY = [
+  {
+    q: '你反复想的那件事，未必是最重要的。它只是最没有结论的。',
+    can:  ['先确认事实', '把话说清楚', '做完一件小事'],
+    hold: ['反复猜测', '深夜做决定', '替对方回答'],
+  },
+];
+
+const CN = ['','一','二','三','四','五','六','七','八','九','十'];
+const cn = n => n <= 10 ? CN[n]
+  : n < 20 ? '十' + (n > 10 ? CN[n - 10] : '')
+  : CN[Math.floor(n / 10)] + '十' + (n % 10 ? CN[n % 10] : '');
+
+(function dailyQuote(){
+  const d = new Date();
+  // 以「一年中的第几天」轮换，保证同一天永远是同一条
+  const day = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 864e5);
+  const t = DAILY[day % DAILY.length];
+  document.getElementById('qLabel').textContent =
+    `今日 · ${cn(d.getMonth() + 1)}月${cn(d.getDate())}日`;
+  document.getElementById('qText').textContent = t.q;
+  const list = a => a.map(x => `<div class="di">${x}</div>`).join('');
+  document.getElementById('qCan').innerHTML  = list(t.can);
+  document.getElementById('qHold').innerHTML = list(t.hold);
+})();
+
+/* ---------- 路由 ---------- */
+function go(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  const el = document.getElementById('s-' + id);
+  el.classList.add('on');
+  el.querySelector('.body').scrollTop = 0;
+}
+
+/* ============================================================
+   屏 1 · 三数
+   ============================================================ */
+const slots = document.getElementById('slots').children;
+document.getElementById('digits').innerHTML =
+  [1,2,3,4,5,6].map(n => `<button class="digit" data-n="${n}">${n}</button>`).join('');
+
+const worryEl = document.getElementById('worry');
+const askEl   = document.getElementById('askBlock');
+worryEl.addEventListener('input', e => { S.worry = e.target.value; });
+
+let threadTimer = null, askTimer = null;
+/**
+ * @param animate 第三颗落定时，先让它以双层空心圆停一拍，再穿线。
+ *                直接跳转进来（hash 直达、重选）时传 false，立即到位。
+ */
+function syncNums(animate = true){
+  for(let i = 0; i < 3; i++){
+    const s = slots[i], v = S.nums[i];
+    s.classList.toggle('set', v != null);
+    s.querySelector('.num').textContent = v != null ? v : '';
+  }
+  const done = S.nums.length === 3;
+  const slotsEl = document.getElementById('slots');
+  clearTimeout(threadTimer); clearTimeout(askTimer);
+  if(done){
+    // 隔一拍再穿线：第三颗珠要先被看见，否则它会跳过「双层空心」直接变黑
+    // 穿线走完，再请用户说出这件事
+    if(animate){
+      threadTimer = setTimeout(() => slotsEl.classList.add('done'), 300);
+      askTimer    = setTimeout(() => askEl.classList.add('on'), 1020);
+    }else{
+      slotsEl.classList.add('done'); askEl.classList.add('on');
+    }
+  }else{
+    slotsEl.classList.remove('done');
+    askEl.classList.remove('on');
+  }
+
+  document.getElementById('scale').classList.toggle('done', done);
+  const blk = document.getElementById('toReading');
+  blk.disabled = !done;
+  blk.classList.toggle('ready', done);   // 不等动画，按钮立即可用
+  document.getElementById('numMeta').textContent =
+    S.nums.length ? S.nums.concat(['—','—','—']).slice(0,3).join(' · ') : '— — —';
+  setMark(done ? 'hold' : S.nums.length ? 'think' : 'listen');
+}
+
+document.getElementById('digits').addEventListener('click', e => {
+  const b = e.target.closest('[data-n]');
+  if(!b || S.nums.length >= 3) return;
+  S.nums.push(+b.dataset.n);
+  syncNums();
+});
+document.getElementById('resetNum').addEventListener('click', () => { S.nums = []; syncNums(false); });
+document.getElementById('toReading').addEventListener('click', () => {
+  S.reading = buildReading(...S.nums);   // 确定性引擎
+  renderReading();
+  go('read');
+});
+
+/* ============================================================
+   屏 2 · 结果 —— 全墨，零彩色
+   ============================================================ */
+function renderReading(){
+  const r = S.reading;
+  document.getElementById('readMeta').textContent = r.numbers.join(' · ');
+
+  const blocks = r.positions.map((p, i) => `
+    <div class="pos">
+      <div class="top">
+        <span class="label">${p.name}</span>
+        <span class="pn">${glyph(p.palace.id, 1.1)}${p.palace.label}</span>
+      </div>
+      <div class="copy">${p.interpretation}</div>
+    </div>
+    ${i < 2 ? `<div class="rule light"></div>
+      <div class="trans"><div class="t">${r.transitions[i]}</div></div>` : ''}
+    <div class="rule${i < 2 ? ' light' : ''}"></div>
+  `).join('');
+
+  const w = worryText();
+  document.getElementById('readBody').innerHTML = `
+    <div class="r-summary">
+      ${w ? `<div class="label r-worry">关于「${w}」</div>` : ''}
+      <h1 class="display">${r.summary}</h1>
+    </div>
+    <div class="rule"></div>
+    ${blocks}
+    <div class="r-foot">
+      <div class="copy sm">${r.uncertainty}</div>
+      <div class="colophon">${r.numbers.join(' · ')} &nbsp;/&nbsp; ${METHOD_VERSION}<br>${CORPUS_VERSION}</div>
+    </div>
+    <div class="rule"></div>
+    <button class="blk ready" data-go="after">聊聊这件事<span class="arw">→</span></button>
+    <div class="rule"></div>
+    <div class="sec" style="padding:16px 26px 30px">
+      <button class="act quiet" data-go="index">先不聊，回主页</button>
+    </div>`;
+}
+
+/* ============================================================
+   屏 3 · Aftercare —— 宣纸，唯一有颜色的地方
+   ============================================================ */
+function renderAfter(){
+  const r = S.reading, p = r.positions.map(x => x.palace);
+  document.getElementById('afterBody').innerHTML = `
+    <div class="card">
+      <div class="csig">
+        ${signature(p, 1.15, true)}
+      </div>
+      <div class="cnames">${r.result.join(' · ')}</div>
+      <div class="crule"></div>
+
+      <div class="clabel">这次真正问的是<button class="edit" data-edit>改</button></div>
+      <div class="cbig" data-field>${worryText() || '这次没有写下具体的问题，可以现在补上。'}</div>
+      <div class="crule"></div>
+
+      <div class="clabel">我的感受与需要<button class="edit" data-edit>改</button></div>
+      <div class="cbody" data-field>你在意的不只是结果，还有「不知道要等到什么时候」这件事本身。你需要的可能是一个明确的边界。</div>
+      <div class="crule"></div>
+
+      <div class="clabel">下一小步 · 24–72 小时内<button class="edit" data-edit>换</button></div>
+      <div class="cbig" data-field>${r.micro_action}</div>
+      <div class="crule tight"></div>
+
+      <details class="fold">
+        <summary>还有 5 项</summary>
+        <div class="sub"><div class="k">三数给出的线索</div>
+          <div class="v">${r.positions.map(x =>
+            `${x.name}｜${x.palace.label}　${x.interpretation}`).join('<br><br>')}</div></div>
+        <div class="sub"><div class="k">已知事实</div>
+          <div class="v">你上一次收到回复是在三天前；你还没有直接问过对方的想法。</div></div>
+        <div class="sub"><div class="k">仍在猜测</div>
+          <div class="v">「他是不是已经不在意了」——这一条目前还没有现实证据支持。</div></div>
+        <div class="sub"><div class="k">我能控制的</div>
+          <div class="v">${r.controllable.join('；')}。</div></div>
+        <div class="sub"><div class="k">下次回看</div>
+          <div class="v">一周后，或者在你收到明确答复的时候。</div></div>
+      </details>
+    </div>
+
+    <div class="sec" style="margin-top:30px">
+      <div class="label">聊完之后，你觉得</div>
+      <div class="fb" id="fb">
+        <button class="fbb" data-fb>更清楚了很多</button>
+        <button class="fbb" data-fb>清楚了一点</button>
+        <button class="fbb" data-fb>差不多</button>
+        <button class="fbb" data-fb>更乱了</button>
+      </div>
+      <div class="copy sm" style="margin:24px 0 20px">Aftercare 默认私密。未保存的内容 24 小时后自动删除。</div>
+    </div>
+    <div class="rule"></div>
+    <button class="blk ready" id="remember">记住这件事<span class="arw">→</span></button>
+    <div class="rule"></div>
+    <div class="sec" style="padding:16px 26px 30px">
+      <button class="act quiet" data-go="index">不保存，结束</button>
+    </div>`;
+}
+
+/* ============================================================
+   屏 4 · 心事地图
+   ============================================================ */
+const SEED = {
+  worry: '这次面试没消息，我是不是没戏了。',
+  topic: '工作与求职', when: '三天前',
+  nums: [3, 3, 3],   // → 速喜 · 小吉 · 大安，三个记号各不相同，更能展示签名系统
+  lines: [['反复出现的主题', '一旦没有回音，就开始预设最坏的结果。']],
+};
+function renderMap(){
+  const themes = [];
+  if(S.saved && S.reading){
+    themes.push({
+      worry: worryText() || '这次没有写下具体的问题', topic: '关系与暧昧', when: '今天',
+      palaces: S.reading.positions.map(x => x.palace),
+      lines: [
+        ['反复出现的主题', '在没有得到明确答复时，容易开始反复猜测。'],
+        ['我的边界', '希望对方能给一个明确的回应，而不是长期悬着。'],
+      ],
+    });
+  }
+  const seedR = buildReading(...SEED.nums);
+  themes.push({ ...SEED, palaces: seedR.positions.map(x => x.palace) });
+
+  document.getElementById('mapMeta').textContent = `${themes.length} 个主题`;
+  document.getElementById('mapBody').innerHTML = `
+    <div class="m-head">
+      <h1 class="display sm">心事地图</h1>
+      <div class="copy sm m-count">只有你选择记住的内容，才会出现在这里。</div>
+    </div>
+    <div class="rule"></div>
+    <div style="height:20px"></div>
+    ${themes.map(t => `
+      <div class="theme">
+        <div class="th">${signature(t.palaces, 1, true)}</div>
+        <div class="tt">${t.worry}</div>
+        <div class="tm">${t.topic} · ${t.when}</div>
+        ${t.lines.length ? `<div class="tl">${t.lines.map(l =>
+          `<div class="li"><b>${l[0]}</b>　${l[1]}</div>`).join('')}</div>` : ''}
+      </div>`).join('')}
+    <div class="review">
+      <div class="rule light"></div>
+      <div style="padding:22px 0 34px">
+        <div class="label">阶段回看</div>
+        <div class="copy sm" style="margin-top:12px">还需要一次相关记录。累积三次之后，于你会告诉你：这类情况下，你真正有效的动作通常是什么。</div>
+      </div>
+    </div>`;
+}
+
+/* ---------- 事件 ---------- */
+/* 主页的「心事地图」在还没占问时也要能进；#read / #after 直达同理。
+   没有结果就先用 2·5·2 铺一份，走的仍是真引擎。 */
+function ensureReading(){
+  if(S.reading) return;
+  S.nums = [2,5,2];
+  if(!S.worry){ S.worry = SAMPLE_WORRY; worryEl.value = SAMPLE_WORRY; }
+  syncNums(false);
+  S.reading = buildReading(2,5,2); renderReading();
+}
+
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]');
+  if(g){
+    const id = g.dataset.go;
+    if(g.hasAttribute('data-seed')) ensureReading();
+    if(id === 'after'){ ensureReading(); renderAfter(); }
+    if(id === 'map'){ renderMap(); }
+    if(id === 'num'){ S.nums = []; syncNums(); }
+    go(id);
+    return;
+  }
+
+  if(e.target.id === 'remember'){ S.saved = true; renderMap(); go('map'); return; }
+
+  const fb = e.target.closest('[data-fb]');
+  if(fb){
+    document.querySelectorAll('[data-fb]').forEach(b => b.classList.remove('sel'));
+    fb.classList.add('sel');
+    return;
+  }
+
+  const ed = e.target.closest('[data-edit]');
+  if(ed){
+    const box = ed.closest('.clabel').nextElementSibling;
+    box.contentEditable = 'true'; box.focus();
+    const rg = document.createRange(); rg.selectNodeContents(box);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(rg);
+    ed.textContent = '好';
+    box.addEventListener('blur', () => {
+      box.contentEditable = 'false'; ed.textContent = ed.dataset.o || '改';
+    }, { once: true });
+  }
+});
+
+/* ---------- 启动 ---------- */
+syncNums(false);
+const h = location.hash.replace('#','');
+if(['num','read','after','map'].includes(h)){
+  if(h !== 'num') ensureReading();
+  if(h === 'after') renderAfter();
+  if(h === 'map'){ S.saved = true; renderMap(); }
+  go(h);
+}
+
+/* ---------- 桌面端自适应缩放 ---------- */
+const phone = document.getElementById('phone');
+const DEV_W = 390 + 22, DEV_H = 844 + 22;
+function fit(){
+  if(matchMedia('(max-width:500px)').matches){
+    phone.style.transform = ''; phone.style.margin = ''; return;
+  }
+  const s = Math.min(1, (innerHeight - 24) / DEV_H, (innerWidth - 24) / DEV_W);
+  phone.style.transform = `scale(${s})`;
+  phone.style.margin = `${(s - 1) * DEV_H / 2}px ${(s - 1) * DEV_W / 2}px`;
+}
+addEventListener('resize', fit); fit();
+</script>
+
+<style>
+/* 真机全屏 */
+@media (max-width:500px){
+  body{ padding:0; background:var(--bg); overflow:auto; }
+  .phone{ transform:none !important; width:100%; }
+  .sidebtn{ display:none; }
+  .device{ width:100vw; height:100vh; height:100dvh; border:0; border-radius:0; box-shadow:none; }
+  .island,.homebar{ display:none; }
+  .statusbar{ display:none; }
+  .body{ padding-top:calc(env(safe-area-inset-top,0px) + 10px); }
+}
+@media (prefers-reduced-motion:reduce){
+  .screen.on{ animation:none; }
+  .slot.set .num{ animation:none; }
+  .slots::after{ transition:none; }
+  .bead{ transition:none; }
+  .slots.done .slot .bead{ transition-delay:0s; }
+  .ring{ animation:none; }
+  .ask{ transition:none; }
+}
+</style>
+</body>
+</html>

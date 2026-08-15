@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>于你 Yewne — 设计版本</title>
+<style>
+  :root {
+    --bg: #f7f2e8;
+    --card: #fffdf8;
+    --ink: #2c2620;
+    --muted: #7d7367;
+    --line: #e5dccc;
+    --accent: #c66645;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 3rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 -apple-system, "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 .4rem; letter-spacing: .01em; }
+  .sub { color: var(--muted); margin: 0 0 2.5rem; font-size: .95rem; }
+  a.card {
+    display: block;
+    padding: 1.25rem 1.4rem;
+    margin-bottom: .85rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color .15s, transform .15s;
+  }
+  a.card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .row { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+  .name { font-weight: 600; font-size: 1.05rem; }
+  .tag {
+    font-size: .72rem;
+    padding: .15rem .5rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    letter-spacing: .02em;
+  }
+  .tag.muted { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+  .desc { color: var(--muted); font-size: .9rem; margin-top: .35rem; }
+  footer { margin-top: 2.5rem; color: var(--muted); font-size: .82rem; border-top: 1px solid var(--line); padding-top: 1.2rem; }
+  code { background: #efe8da; padding: .1rem .35rem; border-radius: 5px; font-size: .85em; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #17140f; --card: #201c16; --ink: #ece5da; --muted: #9c9184; --line: #322c23; }
+  }
+</style>
+<div class="wrap">
+  <h1>于你 Yewne — 设计版本</h1>
+  <p class="sub">「三数问心」入口的四版视觉探索。同一个确定性引擎，不同呈现。</p>
+
+  <a class="card" href="v4-bento/">
+    <div class="row"><span class="name">V4 便当 · 治愈</span><span class="tag">已选定方向</span></div>
+    <div class="desc">暖黄底、黑体、26px 圆角、便当格结构。2026-08-10 定为最终方向，后续打磨都在这一版上。</div>
+  </a>
+
+  <a class="card" href="v3-yewne/">
+    <div class="row"><span class="name">V3 六宫记号</span><span class="tag muted">已归档</span></div>
+    <div class="desc">冷近白、宋体 + 等宽、零圆角。清冷克制的印刷版面方向，V4 是它刻意的反面。</div>
+  </a>
+
+  <a class="card" href="v2-product/">
+    <div class="row"><span class="name">V2 产品版</span><span class="tag muted">已归档</span></div>
+    <div class="desc">按产品文档信息架构做的完整流程版。<code>corpus.js</code> 在这里，V4 复用的就是它。</div>
+  </a>
+
+  <a class="card" href="v1-market/">
+    <div class="row"><span class="name">V1 市场审美验证</span><span class="tag muted">已归档</span></div>
+    <div class="desc">按产品参考渲染图 1:1 还原。仅验证视觉语言，其社交/同频信息架构与产品文档冲突，不代表最终 IA。</div>
+  </a>
+
+  <footer>
+    内部预览，未对外发布。四个版本必须放在一起 —— V4 通过
+    <code>../v2-product/corpus.js</code> 跨目录引用引擎，单独部署会白屏。
+  </footer>
+</div>

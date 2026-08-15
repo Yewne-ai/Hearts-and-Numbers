@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1b40">
+<title>于你 Yewne · V2 真实结构版</title>
+<style>
+/* ============================================================
+   于你 Yewne — Demo V2「真实结构版」
+   信息架构 = 产品文档定义的主闭环
+   视觉语言 = V1 市场审美版已定稿的组件语言
+
+   心事 → 三数 → 结果 → 深聊 → Aftercare → 记住这件事 → 心事地图
+   ============================================================ */
+
+:root{
+  --navy:#0a1b40; --blue:#2262ff; --blue-deep:#1049d9;
+  --ink:#0f1a2e; --ink-2:#3a4356; --gray:#8a93a6; --gray-2:#b0b7c4;
+  --line:#eef0f4; --panel:#f4f5f8; --red:#ff3b30; --green:#33c759;
+  --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB",
+         "Microsoft YaHei","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; padding:0; }
+body{
+  font-family:var(--font); -webkit-font-smoothing:antialiased;
+  background:radial-gradient(1200px 700px at 70% -10%, #f2f4f8 0%, #e7eaef 55%, #dfe3ea 100%);
+  display:flex; align-items:center; justify-content:center;
+  min-height:100vh; min-height:100dvh; overflow:hidden;
+}
+
+/* ---------- 手机外框 ---------- */
+.phone{ position:relative; flex:none; transform-origin:center center; }
+.sidebtn{ position:absolute; background:#232325; border-radius:2px; }
+.sb-l1{ left:-13px; top:150px; width:3px; height:26px; }
+.sb-l2{ left:-13px; top:205px; width:3px; height:52px; }
+.sb-l3{ left:-13px; top:266px; width:3px; height:52px; }
+.sb-r1{ right:-13px; top:230px; width:3px; height:78px; }
+.device{
+  width:390px; height:844px; background:var(--navy);
+  border-radius:54px; border:11px solid #17171a;
+  box-shadow:0 0 0 2px #3c3c40, 0 2px 6px rgba(10,20,50,.25), 0 36px 80px rgba(10,20,50,.35);
+  position:relative; overflow:hidden;
+}
+.island{ position:absolute; top:11px; left:50%; transform:translateX(-50%);
+  width:122px; height:34px; background:#000; border-radius:20px; z-index:60; }
+.island::after{ content:""; position:absolute; right:13px; top:11.5px; width:11px; height:11px;
+  border-radius:50%; background:radial-gradient(circle at 35% 35%, #1d2a44 0%, #060a14 70%); }
+.homebar{ position:absolute; bottom:9px; left:50%; transform:translateX(-50%);
+  width:140px; height:5px; border-radius:3px; background:rgba(255,255,255,.9); z-index:60; pointer-events:none; }
+
+/* ---------- 屏幕 ---------- */
+.screen{ position:absolute; inset:0; display:none; flex-direction:column; background:var(--navy); overflow:hidden; }
+.screen.on{ display:flex; animation:in .26s cubic-bezier(.22,1,.36,1) both; }
+@keyframes in{ from{opacity:.4; transform:translateX(10px);} to{opacity:1; transform:none;} }
+@media (prefers-reduced-motion:reduce){ .screen.on{ animation:fade .18s both; } @keyframes fade{from{opacity:0}to{opacity:1}} }
+
+.statusbar{ height:56px; flex:none; display:flex; align-items:flex-end; justify-content:space-between;
+  padding:0 32px 8px 36px; color:#fff; font-size:15.5px; font-weight:600; }
+.statusbar .sb-right{ display:flex; align-items:center; gap:6px; }
+.body{ flex:1; min-height:0; display:flex; flex-direction:column;
+  overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.body::-webkit-scrollbar{ display:none; }
+
+/* ---------- 顶部导航 ---------- */
+.navrow{ flex:none; display:flex; align-items:center; justify-content:space-between; padding:6px 20px 0; min-height:36px; }
+.navbtn{ width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+  background:none; border:0; color:#fff; cursor:pointer; padding:0; }
+.head{ flex:none; padding:8px 24px 20px; }
+.head h1{ margin:0; color:#fff; font-size:27px; font-weight:800; letter-spacing:-.5px; line-height:1.28; text-wrap:balance; }
+.head p{ margin:9px 0 0; color:#9aabce; font-size:12.5px; line-height:1.6; }
+
+/* ---------- 底部 Tab ---------- */
+.tabbar{ flex:none; height:78px; background:#fff; display:flex; align-items:flex-start;
+  padding-top:10px; border-top:1px solid var(--line); }
+.tab{ flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+  cursor:pointer; color:#b9c0cc; background:none; border:0; font-family:inherit; padding:0; }
+.tab .lb{ font-size:10.5px; letter-spacing:.3px; }
+.tab.act{ color:var(--blue); } .tab.act .lb{ font-weight:600; }
+
+/* ---------- 白面板 ----------
+   flex:1 0 auto —— 可以撑大填满剩余空间，但绝不收缩到比内容矮。
+   若写成 flex:1 + min-height:0，面板会被压短，内容溢出到深蓝底上。 */
+.panel{ margin:0; flex:1 0 auto; background:#fff; border-radius:28px 28px 0 0; padding:22px 16px; }
+.panel.soft{ background:var(--panel); }
+.lbl{ font-size:15.5px; font-weight:800; color:var(--ink); letter-spacing:-.2px; margin:0 2px 11px; }
+.lbl.mt{ margin-top:24px; }
+
+/* ---------- 主 CTA ---------- */
+.cta{ width:100%; height:54px; background:var(--blue); color:#fff; border:0; border-radius:16px;
+  font-family:inherit; font-size:17px; font-weight:600; letter-spacing:.5px;
+  display:flex; align-items:center; justify-content:center; gap:9px; cursor:pointer;
+  box-shadow:0 8px 20px rgba(34,98,255,.35); transition:transform .13s ease, opacity .13s ease; }
+.cta:active{ background:var(--blue-deep); transform:scale(.985); }
+.cta:disabled{ opacity:.35; box-shadow:none; cursor:not-allowed; }
+.cta.ghost{ background:none; color:#8fa2c8; box-shadow:none; height:46px; font-size:14.5px; font-weight:500; }
+.cta.ghost:active{ background:rgba(255,255,255,.06); }
+.cta.sub{ background:#eef1f6; color:var(--ink-2); box-shadow:none; }
+.aidis{ text-align:center; font-size:11px; color:#667082; margin-top:12px; letter-spacing:.2px; }
+.aidis.dark{ color:#8fa2c8; }
+
+/* ---------- 首页大卡 ---------- */
+.cards{ flex:none; padding:0 14px; display:flex; flex-direction:column; gap:12px; }
+.bigcard{ display:flex; align-items:center; gap:15px; padding:18px 16px 18px 18px; border-radius:24px;
+  background:#fff; border:0; width:100%; text-align:left; cursor:pointer; font-family:inherit;
+  box-shadow:0 6px 18px rgba(9,20,48,.14); transition:transform .13s ease; }
+.bigcard:active{ transform:scale(.98); }
+.bigcard.mint{ background:linear-gradient(115deg,#c9f2ea 0%,#e2f9f4 55%,#effcf9 100%); }
+.bigcard.lav{ background:linear-gradient(115deg,#e6ddfb 0%,#efe9fd 55%,#f6f2ff 100%); }
+.bigcard .ic{ flex:none; width:60px; height:60px; display:flex; align-items:center; justify-content:center; }
+.bigcard .t{ font-size:20px; font-weight:800; color:var(--ink); letter-spacing:-.3px; display:block; }
+.bigcard .s{ font-size:12.5px; color:#7d8698; margin-top:5px; display:block; }
+.bigcard .tx{ flex:1; min-width:0; }
+.chev{ flex:none; color:#c2c8d2; }
+
+/* ---------- 典型心事列表 ---------- */
+.wrow{ display:flex; align-items:center; gap:11px; width:100%; padding:13px 4px;
+  background:none; border:0; border-bottom:1px solid var(--line); cursor:pointer;
+  font-family:inherit; text-align:left; }
+.wrow:last-child{ border-bottom:0; }
+.wrow:active{ background:#fafbfc; }
+.wrow .qt{ flex:1; min-width:0; font-size:14.5px; color:var(--ink-2); letter-spacing:-.2px; }
+.wrow .tg{ flex:none; font-size:11px; font-weight:700; padding:3px 9px; border-radius:9px; }
+
+/* ---------- 心事输入 ---------- */
+.field{ background:#f4f5f8; border-radius:16px; padding:14px 15px 10px; }
+.field textarea{ display:block; width:100%; min-height:76px; border:0; background:none; outline:none;
+  resize:none; font-family:inherit; font-size:15px; line-height:1.65; color:var(--ink); padding:0; }
+.field textarea::placeholder{ color:#98a1b0; }
+.field .count{ text-align:right; font-size:11px; color:#98a1b0; margin-top:4px; }
+.chips{ display:flex; flex-wrap:wrap; gap:9px; }
+.chip{ border-radius:19px; padding:9px 15px; font-size:13px; font-weight:600; color:#3a4356;
+  border:1.8px solid transparent; cursor:pointer; font-family:inherit; transition:border-color .13s, transform .13s; }
+.chip:active{ transform:scale(.94); }
+.chip.sel{ border-color:var(--blue); color:var(--blue); font-weight:700; }
+
+/* ---------- 三数输入 ---------- */
+.slots{ display:flex; gap:12px; justify-content:center; margin:14px 0 26px; }
+.slot{ width:76px; height:86px; border-radius:22px; background:#fff; border:2px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+  font-size:34px; font-weight:800; color:var(--ink); transition:all .2s cubic-bezier(.22,1,.36,1); }
+.slot.filled{ border-color:var(--blue); color:var(--blue); animation:pop .3s cubic-bezier(.22,1,.36,1); }
+.slot .ph{ font-size:13px; font-weight:600; color:#c2c8d2; }
+@keyframes pop{ 0%{transform:scale(.86)} 60%{transform:scale(1.06)} 100%{transform:scale(1)} }
+@media (prefers-reduced-motion:reduce){ .slot.filled{ animation:none; } }
+.pad{ display:grid; grid-template-columns:repeat(3,1fr); gap:11px; }
+.key{ height:62px; border-radius:18px; background:#fff; border:0; cursor:pointer;
+  font-family:inherit; font-size:25px; font-weight:700; color:var(--ink);
+  box-shadow:0 3px 10px rgba(9,20,48,.09); transition:transform .12s ease; }
+.key:active{ transform:scale(.93); background:#f0f3fa; }
+.pad.done{ display:none; }
+.padnote{ display:none; text-align:center; font-size:13px; color:var(--gray); padding:18px 0 4px; }
+.padnote.on{ display:block; }
+.note{ font-size:11.5px; color:var(--gray); line-height:1.7; }
+details.method{ margin-top:18px; }
+details.method summary{ font-size:12.5px; color:var(--blue); cursor:pointer; list-style:none; padding:4px 2px; }
+details.method summary::-webkit-details-marker{ display:none; }
+details.method .note{ margin-top:8px; padding:12px 14px; background:#f4f5f8; border-radius:14px; }
+
+/* ---------- 结果页 ---------- */
+.worryecho{ font-size:12.5px; color:#9aabce; margin:0 24px 6px; line-height:1.6; }
+.summary{ margin:0 24px 22px; color:#fff; font-size:22px; font-weight:800;
+  line-height:1.5; letter-spacing:-.4px; text-wrap:balance; }
+.pos{ background:#fff; border-radius:20px; padding:16px 16px 15px; margin-bottom:11px;
+  box-shadow:0 4px 14px rgba(9,20,48,.09); }
+.pos .ph{ display:flex; align-items:center; gap:9px; margin-bottom:10px; }
+.pos .pname{ font-size:12px; font-weight:700; color:var(--gray); letter-spacing:1px; }
+.pgc{ display:flex; align-items:center; gap:6px; margin-left:auto;
+  padding:5px 11px 5px 8px; border-radius:12px; font-size:13px; font-weight:800; }
+.pos .txt{ font-size:14.5px; line-height:1.75; color:var(--ink-2); letter-spacing:-.2px; }
+.trans{ display:flex; align-items:flex-start; gap:9px; padding:2px 8px 13px; }
+.trans .ln{ flex:none; width:2px; height:24px; background:linear-gradient(#d8dee9,transparent); margin-left:8px; border-radius:1px; }
+.trans .tt{ flex:1; font-size:12.5px; color:#8792a6; line-height:1.6; padding-top:2px; }
+.uncert{ background:#f4f5f8; border-radius:16px; padding:13px 15px; margin-top:4px; }
+.uncert .t{ font-size:12.5px; color:#5a6273; line-height:1.7; }
+.ver{ text-align:center; font-size:10px; color:#a9b1bf; margin-top:14px; letter-spacing:.3px; }
+
+/* ---------- 深聊 ---------- */
+.aibadge{ display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:11px;
+  background:rgba(255,255,255,.13); color:#c3d2ee; font-size:11px; font-weight:600; }
+.bub{ background:#fff; border-radius:18px; padding:14px 15px; margin-bottom:10px;
+  box-shadow:0 2px 10px rgba(10,20,45,.06); max-width:88%; }
+.bub .l1{ font-size:14.5px; line-height:1.72; color:var(--ink); letter-spacing:-.2px; }
+.bub.me{ background:var(--blue); color:#fff; margin-left:auto; box-shadow:0 4px 12px rgba(34,98,255,.28); }
+.bub.me .l1{ color:#fff; }
+.modes{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:4px; }
+.mode{ border-radius:14px; padding:12px 10px; background:#fff; border:1.8px solid transparent;
+  font-family:inherit; font-size:13.5px; font-weight:700; color:var(--ink-2); cursor:pointer;
+  text-align:left; transition:border-color .13s, transform .13s; }
+.mode:active{ transform:scale(.96); }
+.mode.sel{ border-color:var(--blue); color:var(--blue); }
+.mode .d{ display:block; font-size:11px; font-weight:500; color:var(--gray); margin-top:4px; }
+.inputbar{ flex:none; padding:10px 14px 14px; display:flex; align-items:center; gap:10px;
+  background:#fff; border-top:1px solid var(--line); }
+.inputbar .ib{ flex:1; height:44px; border-radius:22px; background:#f1f2f6; display:flex; align-items:center;
+  padding:0 16px; font-size:13.5px; color:#a6aebc; }
+.send{ flex:none; width:40px; height:40px; border-radius:50%; background:var(--blue); color:#fff;
+  border:0; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 10px rgba(34,98,255,.3); }
+
+/* ---------- Aftercare ---------- */
+.acard{ background:#fff; border-radius:20px; padding:16px; margin-bottom:11px;
+  box-shadow:0 4px 14px rgba(9,20,48,.09); }
+.acard .ah{ display:flex; align-items:center; gap:8px; margin-bottom:9px; }
+.acard .an{ font-size:12.5px; font-weight:800; color:var(--gray); letter-spacing:.3px; }
+.acard .ac{ margin-left:auto; font-size:11.5px; color:var(--blue); font-weight:600;
+  background:none; border:0; cursor:pointer; font-family:inherit; padding:2px; }
+.acard .av{ font-size:15px; line-height:1.7; color:var(--ink); letter-spacing:-.2px;
+  outline:none; border-radius:8px; }
+.acard .av[contenteditable="true"]:focus{ background:#f0f4ff; box-shadow:0 0 0 2px #c4d6ff; padding:2px 6px; margin:-2px -6px; }
+.acard.hi{ background:linear-gradient(120deg,#eaf1ff,#f5f8ff); }
+.acard.hi .av{ font-weight:700; }
+details.more{ margin-bottom:11px; }
+details.more summary{ list-style:none; cursor:pointer; background:#fff; border-radius:20px;
+  padding:15px 16px; font-size:14px; font-weight:700; color:var(--ink-2);
+  box-shadow:0 4px 14px rgba(9,20,48,.09); display:flex; align-items:center; gap:8px; }
+details.more summary::-webkit-details-marker{ display:none; }
+details.more summary::after{ content:"展开"; margin-left:auto; font-size:11.5px; font-weight:600; color:var(--blue); }
+details.more[open] summary::after{ content:"收起"; }
+details.more[open] summary{ border-radius:20px 20px 0 0; box-shadow:none; }
+details.more .inner{ background:#fff; border-radius:0 0 20px 20px; padding:2px 16px 16px;
+  box-shadow:0 4px 14px rgba(9,20,48,.09); }
+.sub-item{ padding:11px 0; border-bottom:1px solid var(--line); }
+.sub-item:last-child{ border-bottom:0; }
+.sub-item .k{ font-size:11.5px; font-weight:700; color:var(--gray); margin-bottom:5px; }
+.sub-item .v{ font-size:13.5px; line-height:1.7; color:var(--ink-2); }
+.fb{ display:flex; gap:7px; margin-top:4px; }
+.fbb{ flex:1; border-radius:13px; padding:11px 4px; background:#fff; border:1.8px solid transparent;
+  font-family:inherit; font-size:12px; font-weight:600; color:var(--ink-2); cursor:pointer;
+  transition:border-color .13s, transform .13s; }
+.fbb:active{ transform:scale(.95); }
+.fbb.sel{ border-color:var(--blue); color:var(--blue); font-weight:700; }
+
+/* ---------- 记忆确认 ---------- */
+.mem{ background:#fff; border-radius:18px; padding:15px; margin-bottom:10px; display:flex; gap:12px;
+  box-shadow:0 4px 14px rgba(9,20,48,.09); cursor:pointer; transition:transform .12s; }
+.mem:active{ transform:scale(.99); }
+.box{ flex:none; width:23px; height:23px; border-radius:8px; border:2px solid #ccd3de;
+  display:flex; align-items:center; justify-content:center; margin-top:1px; transition:all .15s; }
+.mem.on .box{ background:var(--blue); border-color:var(--blue); }
+.mem .box svg{ opacity:0; transition:opacity .15s; }
+.mem.on .box svg{ opacity:1; }
+.mem .mt{ flex:1; min-width:0; }
+.mem .mk{ font-size:11px; font-weight:700; color:var(--blue); margin-bottom:5px; }
+.mem .mv{ font-size:14.5px; line-height:1.65; color:var(--ink); letter-spacing:-.2px; }
+.mem .ms{ font-size:11px; color:var(--gray); margin-top:7px; }
+
+/* ---------- 心事地图 ---------- */
+.theme{ background:#fff; border-radius:20px; padding:16px; margin-bottom:11px;
+  box-shadow:0 4px 14px rgba(9,20,48,.09); }
+.theme .tn{ font-size:16px; font-weight:800; color:var(--ink); letter-spacing:-.3px; }
+.theme .tm{ font-size:11.5px; color:var(--gray); margin-top:6px; }
+.theme .tl{ margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+.theme .li{ display:flex; gap:9px; font-size:13px; color:var(--ink-2); line-height:1.65; margin-bottom:7px; }
+.theme .li:last-child{ margin-bottom:0; }
+.theme .li .dot{ flex:none; width:5px; height:5px; border-radius:50%; background:#c2c8d2; margin-top:7px; }
+.review{ background:linear-gradient(125deg,#2262ff,#4d84ff); border-radius:20px; padding:18px 17px;
+  margin-bottom:11px; box-shadow:0 8px 22px rgba(34,98,255,.3); }
+.review .rt{ font-size:12px; font-weight:700; color:#c3d8ff; letter-spacing:.5px; margin-bottom:9px; }
+.review .rv{ font-size:14.5px; line-height:1.75; color:#fff; letter-spacing:-.2px; }
+.empty{ text-align:center; padding:50px 24px; }
+.empty .et{ font-size:16px; font-weight:700; color:var(--ink); margin-top:16px; }
+.empty .es{ font-size:13px; color:var(--gray); margin-top:9px; line-height:1.7; }
+
+/* ---------- 真机全屏 ---------- */
+@media (max-width:500px){
+  body{ padding:0; background:var(--navy); overflow:auto; }
+  .phone{ transform:none !important; width:100%; }
+  .sidebtn{ display:none; }
+  .device{ width:100vw; height:100vh; height:100dvh; border:0; border-radius:0; box-shadow:none; }
+  .island,.homebar{ display:none; }
+  .statusbar{ display:none; }
+  .body{ padding-top:calc(env(safe-area-inset-top,0px) + 6px); }
+  .tabbar{ padding-bottom:calc(env(safe-area-inset-bottom,0px)); height:auto; min-height:64px; }
+}
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="sidebtn sb-l1"></div><div class="sidebtn sb-l2"></div>
+  <div class="sidebtn sb-l3"></div><div class="sidebtn sb-r1"></div>
+
+  <div class="device">
+    <div class="island"></div><div class="homebar"></div>
+
+    <!-- ===== 1 · 首页 ===== -->
+    <section class="screen on" id="s-home">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="head" style="padding-top:16px">
+          <h1>今天，有什么心事？</h1>
+          <p>从三个数字和一件具体的事开始，陪你聊清楚</p>
+        </div>
+
+        <div class="cards">
+          <button class="bigcard" data-go="worry" data-skip="0">
+            <span class="ic">
+              <svg width="58" height="58" viewBox="0 0 58 58" fill="none">
+                <rect x="4" y="10" width="50" height="38" rx="13" fill="url(#g1)"/>
+                <circle cx="18" cy="29" r="5.5" fill="#fff"/><circle cx="29" cy="29" r="5.5" fill="#fff" fill-opacity=".82"/><circle cx="40" cy="29" r="5.5" fill="#fff" fill-opacity=".64"/>
+                <defs><linearGradient id="g1" x1="4" y1="10" x2="50" y2="48" gradientUnits="userSpaceOnUse"><stop stop-color="#4d84ff"/><stop offset="1" stop-color="#1f5eff"/></linearGradient></defs>
+              </svg>
+            </span>
+            <span class="tx"><span class="t">三数问心</span><span class="s">想不明白，先报三个数</span></span>
+            <svg class="chev" width="9" height="16" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l6.5 7L1 15"/></svg>
+          </button>
+
+          <button class="bigcard mint" data-go="worry" data-skip="1">
+            <span class="ic">
+              <svg width="58" height="52" viewBox="0 0 58 52" fill="none">
+                <path d="M31 6c10 0 18 7 18 15.6S41 37.2 31 37.2c-2.3 0-4.5-.4-6.5-1l-7 2.7a1 1 0 0 1-1.3-1.3l1.8-5.2A15 15 0 0 1 13 21.6C13 13 21 6 31 6Z" fill="#45cabb"/>
+                <path d="M23 20h16M23 26h11" stroke="#0d403b" stroke-width="2.4" stroke-linecap="round"/>
+                <path d="M14 24c6 0 11 4.6 11 10.2S20 44.4 14 44.4c-1.4 0-2.8-.2-4-.6l-4.4 1.7a.75.75 0 0 1-1-.94l1.1-3.4A10 10 0 0 1 3 34.2C3 28.6 8 24 14 24Z" fill="#2fae9f"/>
+              </svg>
+            </span>
+            <span class="tx"><span class="t">直接聊聊</span><span class="s">不想占问，就说说心里的事</span></span>
+            <svg class="chev" width="9" height="16" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l6.5 7L1 15"/></svg>
+          </button>
+
+          <button class="bigcard lav" data-go="map">
+            <span class="ic">
+              <svg width="58" height="52" viewBox="0 0 58 52" fill="none">
+                <circle cx="15" cy="14" r="7.5" fill="#8153f0"/><circle cx="42" cy="20" r="9.5" fill="#a67ff5"/>
+                <circle cx="24" cy="38" r="8.5" fill="#7040e0"/>
+                <path d="M20 17.5 34.5 20M38 28.5 30 32" stroke="#8153f0" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="1 5"/>
+              </svg>
+            </span>
+            <span class="tx"><span class="t">我的心事地图</span><span class="s">看看反复出现的主题和变化</span></span>
+            <svg class="chev" width="9" height="16" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l6.5 7L1 15"/></svg>
+          </button>
+        </div>
+
+        <div class="panel" style="margin:22px 0 0">
+          <div class="lbl">大家常带来的心事</div>
+          <div id="examples"></div>
+          <div class="aidis" style="margin-top:20px">
+            于你是 AI 情绪陪伴产品，回应由 AI 生成。<br>不提供医疗、法律或金融建议，重要决定请结合现实信息。
+          </div>
+        </div>
+      </div>
+      <nav class="tabbar" data-tabs></nav>
+    </section>
+
+    <!-- ===== 2 · 心事输入 ===== -->
+    <section class="screen" id="s-worry">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="navrow"><button class="navbtn" data-go="home">
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5 2 10l8.5 8.5"/></svg>
+        </button><span></span></div>
+        <div class="head"><h1>有什么放不下的事？</h1><p>先不用解释完整，一句话就行</p></div>
+        <div class="panel">
+          <div class="lbl">这件事是</div>
+          <div class="field">
+            <textarea id="worryText" maxlength="200" rows="3" placeholder="比如：我不知道该不该继续等他。"></textarea>
+            <div class="count"><span id="wCount">0</span>/200</div>
+          </div>
+          <div class="lbl mt">它大概属于</div>
+          <div class="chips" id="topicChips"></div>
+          <button class="cta" id="worryNext" style="margin-top:26px" disabled>
+            下一步
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+          <div class="aidis">你写的内容默认私密，不会公开，也不默认用于训练</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 3 · 三数输入 ===== -->
+    <section class="screen" id="s-numbers">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="navrow"><button class="navbtn" data-go="worry">
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5 2 10l8.5 8.5"/></svg>
+        </button><span></span></div>
+        <div class="head"><h1>想三个 1–6 的数字</h1><p>心里想着刚才那件事，不用纠结选哪个</p></div>
+        <div class="panel soft">
+          <div class="slots" id="slots">
+            <div class="slot"><span class="ph">第一个</span></div>
+            <div class="slot"><span class="ph">第二个</span></div>
+            <div class="slot"><span class="ph">第三个</span></div>
+          </div>
+          <div class="pad" id="pad"></div>
+          <div class="padnote" id="padNote">三个数字都有了</div>
+          <button class="cta sub" id="resetNums" style="margin-top:12px;height:44px;font-size:14px">重新选择</button>
+          <details class="method">
+            <summary>这三个数字怎么用？</summary>
+            <div class="note">
+              三数问心参考公开常见的小六壬六宫顺推方式，由于你定义固定的产品算法。
+              它提供一种传统文化启发的观察角度，用于自我反思和对话起点，<b>不构成对未来的确定预测</b>。
+              同一组数字在任何模型版本下结果都不变。
+            </div>
+          </details>
+          <button class="cta" id="calcBtn" style="margin-top:18px" disabled>看看结果</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 4 · 结果页 ===== -->
+    <section class="screen" id="s-reading">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="navrow"><button class="navbtn" data-go="numbers">
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5 2 10l8.5 8.5"/></svg>
+        </button><span></span></div>
+        <div class="worryecho" id="rEcho"></div>
+        <div class="summary" id="rSummary"></div>
+        <div class="panel soft" id="rPanel"></div>
+      </div>
+    </section>
+
+    <!-- ===== 5 · 深聊 ===== -->
+    <section class="screen" id="s-chat">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="navrow">
+          <button class="navbtn" data-go="reading">
+            <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5 2 10l8.5 8.5"/></svg>
+          </button>
+          <span class="aibadge">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+            AI 生成
+          </span>
+        </div>
+        <div class="head" style="padding-bottom:16px"><h1>把这件事聊清楚</h1></div>
+        <div class="panel soft" style="padding-top:20px">
+          <div id="chatLog"></div>
+          <div class="lbl mt" id="modeLbl">你现在想要的是</div>
+          <div class="modes" id="modes"></div>
+          <button class="cta sub" id="endChat" style="margin-top:16px;height:46px;font-size:14.5px">结束并生成 Aftercare</button>
+          <div class="aidis" style="padding-bottom:12px">内容由 AI 生成，仅供参考。任何时候说「结束」都可以停下</div>
+        </div>
+      </div>
+      <div class="inputbar">
+        <div class="ib">说说你的情况…</div>
+        <button class="send"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 10.5 13.5M21 3l-6.8 18-3.7-7.5L3 9.8 21 3Z"/></svg></button>
+      </div>
+    </section>
+
+    <!-- ===== 6 · Aftercare ===== -->
+    <section class="screen" id="s-aftercare">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="navrow"><button class="navbtn" data-go="chat">
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5 2 10l8.5 8.5"/></svg>
+        </button><span class="aibadge">AI 辅助生成</span></div>
+        <div class="head" style="padding-bottom:16px"><h1>这次聊完，<br>留下这些</h1><p>都可以改。不想要的可以删掉</p></div>
+        <div class="panel soft" id="acPanel"></div>
+      </div>
+    </section>
+
+    <!-- ===== 7 · 记忆确认 ===== -->
+    <section class="screen" id="s-memory">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="navrow"><button class="navbtn" data-go="aftercare">
+          <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5 2 10l8.5 8.5"/></svg>
+        </button><span></span></div>
+        <div class="head" style="padding-bottom:16px">
+          <h1>有哪些可以记住？</h1>
+          <p>默认都不记住。只有你选中的，才会写进长期上下文</p>
+        </div>
+        <div class="panel soft">
+          <div id="memList"></div>
+          <button class="cta" id="saveMem" style="margin-top:20px" disabled>保存选中的 0 条</button>
+          <button class="cta ghost" data-go="map" id="rejectMem" style="margin-top:6px;color:#8a93a6">全部拒绝，直接结束</button>
+          <div class="aidis">你随时可以在心事地图里修改或删除。删除后模型不会再用到它</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 8 · 心事地图 ===== -->
+    <section class="screen" id="s-map">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="head" style="padding-top:16px">
+          <h1>我的心事地图</h1><p>只有你选择记住的内容，才会出现在这里</p>
+        </div>
+        <div class="panel soft" id="mapPanel"></div>
+      </div>
+      <nav class="tabbar" data-tabs></nav>
+    </section>
+  </div>
+</div>
+
+<script type="module">
+import { PALACES, TOPICS, EXAMPLE_WORRIES, buildReading,
+         METHOD_VERSION, CORPUS_VERSION, selfTest } from './corpus.js';
+
+/* 开发期自检：算法与语料一致性（文档 §5.4） */
+console.log('[三数问心] 算法自检', selfTest());
+
+/* ---------- 会话状态 ---------- */
+const S = { worry:'', topic:null, skipReading:false, nums:[], reading:null, mode:null, memPicked:new Set() };
+
+/* ---------- 状态栏 / Tab ---------- */
+const SB = `
+<svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect y="7.5" width="3" height="4.5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" width="3" height="12" rx="1"/></svg>
+<svg width="18" height="13" viewBox="0 0 20 14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M2.2 5.2a12 12 0 0 1 15.6 0"/><path d="M5.5 8.7a7 7 0 0 1 9 0"/><circle cx="10" cy="12" r="1.7" fill="#fff" stroke="none"/></svg>
+<svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="21" height="11" rx="3.4" fill="none" stroke="#fff" stroke-opacity=".45"/><rect x="2" y="2" width="18" height="8" rx="2" fill="#fff"/><path d="M23.5 4v4a2.2 2.2 0 0 0 0-4Z" fill="#fff" fill-opacity=".45"/></svg>`;
+document.querySelectorAll('[data-sb]').forEach(n=>n.innerHTML=SB);
+
+const TABS = [
+  { id:'home', lb:'于你', go:'home',
+    ic:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="12" cy="12" r="3.4" fill="currentColor"/>',
+    icAct:'<circle cx="12" cy="12" r="9.5" fill="currentColor"/><circle cx="12" cy="12" r="3.6" fill="#fff"/>' },
+  { id:'map', lb:'心事地图', go:'map',
+    ic:'<circle cx="7" cy="7" r="3.2" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="17.5" cy="10" r="4" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="10" cy="18" r="3.6" fill="none" stroke="currentColor" stroke-width="1.9"/>',
+    icAct:'<circle cx="7" cy="7" r="3.2" fill="currentColor"/><circle cx="17.5" cy="10" r="4" fill="currentColor"/><circle cx="10" cy="18" r="3.6" fill="currentColor"/>' },
+  { id:'me', lb:'我的',
+    ic:'<circle cx="12" cy="8.2" r="3.8" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>' },
+];
+function renderTabs(nav, act){
+  nav.innerHTML = TABS.map(t=>{
+    const on = t.id===act, p = on&&t.icAct ? t.icAct : t.ic;
+    return `<button class="tab ${on?'act':''}" ${t.go?`data-go="${t.go}"`:''}>
+      <svg width="24" height="24" viewBox="0 0 24 24">${p}</svg><span class="lb">${t.lb}</span></button>`;
+  }).join('');
+}
+
+/* ---------- 路由 ---------- */
+const TAB_OF = { home:'home', map:'map' };
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  const el = document.getElementById('s-'+id); if(!el) return;
+  el.classList.add('on'); el.querySelector('.body').scrollTop = 0;
+  el.querySelectorAll('[data-tabs]').forEach(n=>renderTabs(n, TAB_OF[id]));
+  if(id==='map') renderMap();
+}
+
+/* ---------- 首页：典型心事 ---------- */
+document.getElementById('examples').innerHTML = EXAMPLE_WORRIES.map((w,i)=>{
+  const t = TOPICS.find(t=>t.id===w.topic);
+  return `<button class="wrow" data-ex="${i}">
+    <span class="qt">${w.text}</span>
+    <span class="tg" style="background:${t.tint};color:${t.ink}">${t.label}</span>
+    <svg class="chev" width="8" height="14" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l6.5 7L1 15"/></svg>
+  </button>`;
+}).join('');
+
+/* ---------- 心事输入 ---------- */
+document.getElementById('topicChips').innerHTML = TOPICS.map(t=>
+  `<button class="chip" data-topic="${t.id}" style="background:${t.tint}">${t.label}</button>`).join('');
+
+const wText = document.getElementById('worryText');
+const wNext = document.getElementById('worryNext');
+function syncWorry(){
+  S.worry = wText.value.trim();
+  document.getElementById('wCount').textContent = wText.value.length;
+  wNext.disabled = !(S.worry.length >= 2 && S.topic);
+}
+wText.addEventListener('input', syncWorry);
+
+/* ---------- 三数输入 ---------- */
+const slots = document.getElementById('slots').children;
+document.getElementById('pad').innerHTML =
+  [1,2,3,4,5,6].map(n=>`<button class="key" data-num="${n}">${n}</button>`).join('');
+
+function syncNums(){
+  for(let i=0;i<3;i++){
+    const s = slots[i];
+    if(S.nums[i]!=null){ s.classList.add('filled'); s.textContent = S.nums[i]; }
+    else{ s.classList.remove('filled'); s.innerHTML = `<span class="ph">第${['一','二','三'][i]}个</span>`; }
+  }
+  const done = S.nums.length === 3;
+  document.getElementById('calcBtn').disabled = !done;
+  document.getElementById('pad').classList.toggle('done', done);
+  document.getElementById('padNote').classList.toggle('on', done);
+}
+document.getElementById('resetNums').addEventListener('click', ()=>{ S.nums=[]; syncNums(); });
+
+/* ---------- 结果页渲染 ---------- */
+const SYMBOL = {
+  circle:   '<circle cx="9" cy="9" r="6" fill="currentColor"/>',
+  rings:    '<circle cx="9" cy="9" r="6.4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="9" r="2.4" fill="currentColor"/>',
+  triangle: '<path d="M9 2.5 15.5 14.5h-13L9 2.5Z" fill="currentColor"/>',
+  diamond:  '<path d="M9 2 16 9l-7 7-7-7 7-7Z" fill="currentColor"/>',
+  arc:      '<path d="M2.5 13.5a6.5 6.5 0 0 1 13 0h-13Z" fill="currentColor"/>',
+  square:   '<rect x="3" y="3" width="12" height="12" rx="2.4" fill="none" stroke="currentColor" stroke-width="2.4"/>',
+};
+function palaceChip(p){
+  return `<span class="pgc" style="background:${p.tint};color:${p.color}">
+    <svg width="15" height="15" viewBox="0 0 18 18">${SYMBOL[p.symbol]}</svg>${p.label}</span>`;
+}
+function renderReading(){
+  const r = S.reading;
+  document.getElementById('rEcho').textContent = `关于「${S.worry}」`;
+  document.getElementById('rSummary').textContent = r.summary;
+
+  const posHtml = r.positions.map((p,i)=>`
+    <div class="pos">
+      <div class="ph"><span class="pname">${p.name}</span>${palaceChip(p.palace)}</div>
+      <div class="txt">${p.interpretation}</div>
+    </div>
+    ${i<2 ? `<div class="trans"><span class="ln"></span><span class="tt">${r.transitions[i]}</span></div>` : ''}
+  `).join('');
+
+  document.getElementById('rPanel').innerHTML = `
+    ${posHtml}
+    <div class="uncert"><div class="t">${r.uncertainty}</div></div>
+    <button class="cta" data-go="chat" style="margin-top:20px">
+      聊聊这件事
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+    <button class="cta ghost" data-go="home" style="color:#8a93a6">先不聊，回首页</button>
+    <div class="ver">${r.numbers.join(' · ')} ｜ ${METHOD_VERSION} ｜ ${CORPUS_VERSION}</div>`;
+}
+
+/* ---------- 深聊 ---------- */
+const MODES = [
+  { id:'listen',  t:'只听我说',     d:'我暂时不想被分析' },
+  { id:'clarify', t:'帮我理清',     d:'信息和情绪混在一起' },
+  { id:'reframe', t:'帮我换个角度', d:'我卡在一个解释里' },
+  { id:'act',     t:'陪我做一步',   d:'想动，但不知从哪开始' },
+];
+const MODE_REPLY = {
+  listen:  '好，那我先不分析。你刚才说的这件事，最让你停不下来的是哪一段？我在听。',
+  clarify: '我们把它拆开看：哪些是你确定发生过的事实，哪些是你现在的推测？先说事实那部分就好。',
+  reframe: '有没有一种可能，对方的沉默不代表答案，只代表他也还没想清楚？这个说法贴近你的感觉吗？',
+  act:     '那我们把它缩到最小：今天之内、你一个人就能完成、做了也不会有坏结果的一件事，会是什么？',
+};
+document.getElementById('modes').innerHTML = MODES.map(m=>
+  `<button class="mode" data-mode="${m.id}">${m.t}<span class="d">${m.d}</span></button>`).join('');
+
+function pushBub(text, me=false){
+  const log = document.getElementById('chatLog');
+  const d = document.createElement('div');
+  d.className = 'bub' + (me ? ' me' : '');
+  d.innerHTML = `<div class="l1">${text}</div>`;
+  log.appendChild(d);
+  d.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+function openChat(){
+  const log = document.getElementById('chatLog');
+  log.innerHTML = '';
+  pushBub(`你说的是「${S.worry}」。`);
+  if(S.skipReading){
+    pushBub('我们从你最在意的那一点开始。这件事里，最让你放不下的是什么？');
+  }else{
+    const p3 = S.reading.positions[2].palace;
+    pushBub(`结果里「当下」落在<b style="color:${p3.color}">${p3.label}</b>——${S.reading.summary}<br><br>先不管准不准。我更想知道：你最难放下的是这件事本身，还是一直没有得到一个明确的答复？`);
+  }
+}
+
+/* ---------- Aftercare（文档 §6.4 八个模块） ---------- */
+function renderAftercare(){
+  const r = S.reading;
+  const clue = r
+    ? r.positions.map(p=>`<div class="sub-item"><div class="k">${p.name} · ${p.palace.label}</div><div class="v">${p.interpretation}</div></div>`).join('')
+    : `<div class="sub-item"><div class="v">这次没有做三数问心。</div></div>`;
+  const micro = r ? r.micro_action : '写下你现在最想确认的一件事，以及你打算怎么问出口。';
+  const ctrl  = r ? r.controllable : ['你愿意等待多久', '你需要怎样的回应'];
+
+  document.getElementById('acPanel').innerHTML = `
+    <div class="acard hi">
+      <div class="ah"><span class="an">这次真正问的是</span><button class="ac" data-edit>修改</button></div>
+      <div class="av" data-field>${S.worry}</div>
+    </div>
+
+    <div class="acard">
+      <div class="ah"><span class="an">我的感受与需要</span><button class="ac" data-edit>修改</button></div>
+      <div class="av" data-field>你在意的不只是结果，还有「不知道要等到什么时候」这件事本身。你需要的可能是一个明确的边界。</div>
+    </div>
+
+    <div class="acard hi">
+      <div class="ah"><span class="an">下一小步 · 24–72 小时内</span><button class="ac" data-edit>换一个</button></div>
+      <div class="av" data-field>${micro}</div>
+    </div>
+
+    <details class="more">
+      <summary>还有 5 项细节</summary>
+      <div class="inner">
+        <div class="sub-item"><div class="k">三数给出的线索</div><div class="v" style="padding:0">${clue}</div></div>
+        <div class="sub-item"><div class="k">已知事实</div><div class="v">你上一次收到回复是在三天前；你还没有直接问过对方的想法。</div></div>
+        <div class="sub-item"><div class="k">仍在猜测</div><div class="v">「他是不是已经不在意了」——这一条目前还没有现实证据支持。</div></div>
+        <div class="sub-item"><div class="k">我能控制的</div><div class="v">${ctrl.join('；')}。</div></div>
+        <div class="sub-item"><div class="k">下次回看</div><div class="v">一周后，或者在你收到明确答复的时候。</div></div>
+      </div>
+    </details>
+
+    <div class="lbl mt">聊完之后，你觉得</div>
+    <div class="fb" id="fb">
+      <button class="fbb" data-fb="much">更清楚了很多</button>
+      <button class="fbb" data-fb="slight">清楚了一点</button>
+      <button class="fbb" data-fb="same">差不多</button>
+      <button class="fbb" data-fb="worse">更乱了</button>
+    </div>
+
+    <button class="cta" data-go="memory" style="margin-top:22px">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16Z"/></svg>
+      记住这件事
+    </button>
+    <button class="cta ghost" data-go="home" style="color:#8a93a6">不保存，结束这次</button>
+    <div class="aidis">Aftercare 默认私密。未保存的内容 24 小时后自动删除</div>`;
+}
+
+/* ---------- 记忆确认（文档 §6.6，默认全部未选中） ---------- */
+const MEM_CANDIDATES = [
+  { k:'反复出现的主题', v:'在没有得到明确答复时，容易开始反复猜测。' },
+  { k:'我的边界',       v:'希望对方能给一个明确的回应，而不是长期悬着。' },
+  { k:'尝试过的行动',   v:'给等待设一个时间点，到时候就做决定。' },
+];
+function renderMemory(){
+  document.getElementById('memList').innerHTML = MEM_CANDIDATES.map((m,i)=>`
+    <div class="mem" data-mem="${i}">
+      <span class="box"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <span class="mt">
+        <span class="mk">${m.k}</span>
+        <span class="mv">${m.v}</span>
+        <span class="ms">来源：本次会话 · 你可以编辑后再保存</span>
+      </span>
+    </div>`).join('');
+  S.memPicked.clear(); syncMem();
+}
+function syncMem(){
+  const n = S.memPicked.size, btn = document.getElementById('saveMem');
+  btn.textContent = `保存选中的 ${n} 条`; btn.disabled = n === 0;
+  document.querySelectorAll('[data-mem]').forEach(el=>
+    el.classList.toggle('on', S.memPicked.has(+el.dataset.mem)));
+}
+
+/* ---------- 心事地图 ---------- */
+let mapSaved = false;
+function renderMap(){
+  const el = document.getElementById('mapPanel');
+  if(!mapSaved){
+    el.innerHTML = `
+      <div class="empty">
+        <svg width="72" height="66" viewBox="0 0 72 66" fill="none">
+          <circle cx="18" cy="17" r="9" fill="#e6ddfb"/><circle cx="52" cy="24" r="12" fill="#efe9fd"/><circle cx="29" cy="47" r="10.5" fill="#f2eefe"/>
+          <path d="M25 20 42 24M46 34 36 39" stroke="#cdbcf5" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="1 6"/>
+        </svg>
+        <div class="et">这里还是空的</div>
+        <div class="es">只有你选择「记住这件事」的内容<br>才会出现在心事地图里</div>
+        <button class="cta" data-go="home" style="margin-top:24px">去聊一件心事</button>
+      </div>`;
+    return;
+  }
+  const picked = [...S.memPicked].map(i=>MEM_CANDIDATES[i]);
+  el.innerHTML = `
+    <div class="review">
+      <div class="rt">阶段回看 · 需要至少三次相关记录</div>
+      <div class="rv">这是你在这个主题下的第 1 次记录。<br>再积累两次，于你会告诉你：这类情况下，你真正有效的动作通常是什么。</div>
+    </div>
+    <div class="theme">
+      <div class="tn">${S.worry}</div>
+      <div class="tm">${TOPICS.find(t=>t.id===S.topic)?.label || '自我与日常'} · 今天更新${S.reading?` · 三数 ${S.reading.result.join('｜')}`:''}</div>
+      <div class="tl">
+        ${picked.map(p=>`<div class="li"><span class="dot"></span><span><b>${p.k}：</b>${p.v}</span></div>`).join('')}
+      </div>
+    </div>
+    <div class="aidis">每一条都可以单独修改或删除。删除后，模型不会再用到它</div>
+    <button class="cta sub" data-go="home" style="margin-top:16px">回首页</button>`;
+}
+
+/* ---------- 事件委托 ---------- */
+document.addEventListener('click', e=>{
+  const t = e.target;
+
+  const goBtn = t.closest('[data-go]');
+  if(goBtn){
+    const id = goBtn.dataset.go;
+    if(goBtn.dataset.skip != null){ S.skipReading = goBtn.dataset.skip === '1'; }
+    if(id === 'chat')      openChat();
+    if(id === 'aftercare') renderAftercare();
+    if(id === 'memory')    renderMemory();
+    go(id); return;
+  }
+
+  const ex = t.closest('[data-ex]');
+  if(ex){
+    const w = EXAMPLE_WORRIES[+ex.dataset.ex];
+    S.skipReading = false; S.topic = w.topic;
+    wText.value = w.text; syncWorry();
+    document.querySelectorAll('[data-topic]').forEach(c=>c.classList.toggle('sel', c.dataset.topic===w.topic));
+    go('worry'); return;
+  }
+
+  const tc = t.closest('[data-topic]');
+  if(tc){
+    S.topic = tc.dataset.topic;
+    document.querySelectorAll('[data-topic]').forEach(c=>c.classList.remove('sel'));
+    tc.classList.add('sel'); syncWorry(); return;
+  }
+
+  const key = t.closest('[data-num]');
+  if(key){ if(S.nums.length<3){ S.nums.push(+key.dataset.num); syncNums(); } return; }
+
+  const mode = t.closest('[data-mode]');
+  if(mode){
+    const id = mode.dataset.mode;
+    document.querySelectorAll('[data-mode]').forEach(m=>m.classList.remove('sel'));
+    mode.classList.add('sel'); S.mode = id;
+    pushBub(MODES.find(m=>m.id===id).t, true);
+    setTimeout(()=>pushBub(MODE_REPLY[id]), 420);
+    return;
+  }
+
+  const fb = t.closest('[data-fb]');
+  if(fb){
+    document.querySelectorAll('[data-fb]').forEach(b=>b.classList.remove('sel'));
+    fb.classList.add('sel'); return;
+  }
+
+  const ed = t.closest('[data-edit]');
+  if(ed){
+    const v = ed.closest('.acard').querySelector('[data-field]');
+    v.contentEditable = 'true'; v.focus();
+    const rg = document.createRange(); rg.selectNodeContents(v);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(rg);
+    ed.textContent = '完成';
+    v.addEventListener('blur', ()=>{ v.contentEditable='false'; ed.textContent='修改'; }, { once:true });
+    return;
+  }
+
+  const mem = t.closest('[data-mem]');
+  if(mem){
+    const i = +mem.dataset.mem;
+    S.memPicked.has(i) ? S.memPicked.delete(i) : S.memPicked.add(i);
+    syncMem(); return;
+  }
+});
+
+/* 心事输入 → 三数 或 直接深聊 */
+wNext.addEventListener('click', ()=>{
+  if(S.skipReading){ S.reading = null; openChat(); go('chat'); }
+  else { S.nums = []; syncNums(); go('numbers'); }
+});
+/* 三数 → 计算 → 结果 */
+document.getElementById('calcBtn').addEventListener('click', ()=>{
+  S.reading = buildReading(...S.nums);   // 确定性引擎，模型无权修改
+  renderReading(); go('reading');
+});
+/* 深聊 → Aftercare */
+document.getElementById('endChat').addEventListener('click', ()=>{ renderAftercare(); go('aftercare'); });
+/* 记忆 → 地图 */
+document.getElementById('saveMem').addEventListener('click', ()=>{ mapSaved = true; go('map'); });
+document.getElementById('rejectMem').addEventListener('click', ()=>{ S.memPicked.clear(); });
+
+/* ---------- 启动 ---------- */
+syncWorry(); syncNums();
+const h = location.hash.replace('#','');
+go(['home','worry','numbers','map'].includes(h) ? h : 'home');
+
+/* ---------- 桌面端自适应缩放 ----------
+   transform:scale() 不改变元素的布局尺寸，flex 居中仍按原始 866px 计算，
+   窗口偏矮时上下会同时溢出并被 overflow:hidden 裁掉。
+   用负 margin 把布局盒收缩到缩放后的实际尺寸，居中才是对的。       */
+const phone = document.getElementById('phone');
+const DEV_W = 390 + 22, DEV_H = 844 + 22;   // 含 11px 边框
+function fit(){
+  if(matchMedia('(max-width:500px)').matches){
+    phone.style.transform = ''; phone.style.margin = ''; return;
+  }
+  const s = Math.min(1, (innerHeight - 24) / DEV_H, (innerWidth - 24) / DEV_W);
+  phone.style.transform = `scale(${s})`;
+  phone.style.margin = `${(s - 1) * DEV_H / 2}px ${(s - 1) * DEV_W / 2}px`;
+}
+addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>六宫记号对照</title>
+<style>
+body{margin:0;background:#F4F5F6;font-family:-apple-system,"PingFang SC",sans-serif;color:#14161A;padding:40px}
+h1{font-family:Georgia,"Songti SC",serif;font-weight:400;font-size:26px;margin:0 0 6px}
+.n{font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.14em;color:#8B9199;text-transform:uppercase}
+table{border-collapse:collapse;margin-top:28px;width:100%;max-width:640px}
+td,th{border-bottom:1px solid #DCDEE2;padding:14px 10px;text-align:left;vertical-align:middle}
+th{font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.14em;color:#8B9199;text-transform:uppercase;font-weight:400}
+.nm{font-family:Georgia,"Songti SC",serif;font-size:17px}
+.inline{font-size:14.5px;line-height:1.9;color:#4A5058}
+.sigrow{margin-top:34px;padding-top:20px;border-top:1px solid #DCDEE2}
+.paper{background:#ECE8DB;border:1px solid #D6D0BE;padding:20px;margin-top:20px;max-width:640px}
+.gl{display:inline-block;vertical-align:-3px}.sig{display:inline-flex;font-size:0}
+</style></head><body>
+<h1>六宫记号 v1</h1><div class="n">Yewne Notation · Contact Sheet</div>
+<table id="t"><tr><th>记号</th><th>宫位</th><th>放大 2×</th><th>纸上用色</th></tr></table>
+<div class="sigrow"><div class="n">行内混排（正文尺寸）</div>
+<p class="inline" id="mix"></p></div>
+<div class="sigrow"><div class="n">会话签名 · 全墨（主界面）</div><p id="sigA"></p></div>
+<div class="paper"><div class="n" style="color:#8C8676">会话签名 · 上色（宣纸卡）</div><p id="sigB"></p></div>
+<script type="module">
+import { glyph, signature, PAPER_INK } from './notation.js';
+import { PALACES } from '../v2-product/corpus.js';
+document.getElementById('t').insertAdjacentHTML('beforeend', PALACES.map(p=>
+ `<tr><td>${glyph(p.id)}</td><td class="nm">${p.label}</td><td>${glyph(p.id,2)}</td>
+  <td>${glyph(p.id,1,PAPER_INK[p.id])}</td></tr>`).join(''));
+document.getElementById('mix').innerHTML =
+ PALACES.map(p=>`起势 ${glyph(p.id)} ${p.label}`).join('，') + '。';
+document.getElementById('sigA').innerHTML =
+ [[1,3,5],[2,5,2],[6,6,6]].map(()=>'').join('');
+const combos=[[2,5,2],[6,6,6],[1,4,3]];
+import('../v2-product/corpus.js').then(m=>{
+ document.getElementById('sigA').innerHTML = combos.map(c=>{
+   const r=m.buildReading(...c); return `<span style="margin-right:26px">${signature(r.positions.map(x=>x.palace),1,false)}</span>`;}).join('');
+ document.getElementById('sigB').innerHTML = combos.map(c=>{
+   const r=m.buildReading(...c); return `<span style="margin-right:26px">${signature(r.positions.map(x=>x.palace),1,true)}</span>`;}).join('');
+});
+</script></body></html>

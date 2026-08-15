@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1b40">
+<title>于你 Yewne · V1 市场审美版</title>
+<style>
+/* ============================================================
+   于你 Yewne — Demo V1「市场审美版」精修版
+   按产品提供的参考图 1:1 还原，无自主设计成分。
+   纯静态：无依赖、无构建、无后端。
+   桌面端 = iPhone 外框预览；真机访问 = 全屏体验。
+   ============================================================ */
+
+:root{
+  --navy:        #0a1b40;
+  --navy-2:      #0d2050;
+  --blue:        #2262ff;
+  --blue-deep:   #1049d9;
+  --ink:         #0f1a2e;
+  --ink-2:       #4a5568;
+  --gray:        #8a93a6;
+  --gray-2:      #b0b7c4;
+  --line:        #eef0f4;
+  --panel:       #f4f5f8;
+  --white:       #ffffff;
+  --red:         #ff3b30;
+  --green-pill:  #33c759;
+  --font: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+          "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; padding:0; }
+body{
+  font-family:var(--font);
+  -webkit-font-smoothing:antialiased;
+  background:
+    radial-gradient(1200px 700px at 70% -10%, #f2f4f8 0%, #e7eaef 55%, #dfe3ea 100%);
+  display:flex; align-items:center; justify-content:center;
+  min-height:100vh; min-height:100dvh;
+  overflow:hidden;
+}
+
+/* ---------- 手机外框（仅桌面端出现） ---------- */
+.phone{ position:relative; flex:none; transform-origin:center center; }
+.sidebtn{
+  position:absolute; background:#232325; border-radius:2px; z-index:0;
+}
+.sb-l1{ left:-13px; top:150px; width:3px; height:26px; }   /* 静音键 */
+.sb-l2{ left:-13px; top:205px; width:3px; height:52px; }   /* 音量 + */
+.sb-l3{ left:-13px; top:266px; width:3px; height:52px; }   /* 音量 - */
+.sb-r1{ right:-13px; top:230px; width:3px; height:78px; }  /* 电源键 */
+
+.device{
+  width:390px; height:844px;
+  background:var(--navy);
+  border-radius:54px;
+  border:11px solid #17171a;
+  box-shadow:
+    0 0 0 2px #3c3c40,
+    0 2px 6px rgba(10,20,50,.25),
+    0 36px 80px rgba(10,20,50,.35);
+  position:relative;
+  overflow:hidden;
+  z-index:1;
+}
+.island{
+  position:absolute; top:11px; left:50%; transform:translateX(-50%);
+  width:122px; height:34px; background:#000; border-radius:20px; z-index:60;
+}
+.island::after{
+  content:""; position:absolute; right:13px; top:11.5px;
+  width:11px; height:11px; border-radius:50%;
+  background:radial-gradient(circle at 35% 35%, #1d2a44 0%, #060a14 70%);
+}
+.homebar{
+  position:absolute; bottom:9px; left:50%; transform:translateX(-50%);
+  width:140px; height:5px; border-radius:3px; background:rgba(255,255,255,.9);
+  z-index:60; pointer-events:none;
+}
+
+/* ---------- 屏幕 ---------- */
+.screen{
+  position:absolute; inset:0;
+  display:none; flex-direction:column;
+  background:var(--navy);
+  overflow:hidden;
+}
+.screen.on{ display:flex; animation:screenIn .26s ease both; }
+@keyframes screenIn{
+  from{ opacity:.4; transform:translateX(10px); }
+  to  { opacity:1;  transform:none; }
+}
+
+.statusbar{
+  height:56px; flex:none;
+  display:flex; align-items:flex-end; justify-content:space-between;
+  padding:0 32px 8px 36px;
+  color:#fff; font-size:15.5px; font-weight:600;
+  letter-spacing:.2px;
+}
+.statusbar .sb-right{ display:flex; align-items:center; gap:6px; }
+
+.body{
+  flex:1; min-height:0;
+  display:flex; flex-direction:column;
+  overflow-y:auto; overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.body::-webkit-scrollbar{ display:none; }
+
+/* ---------- 底部 Tab ---------- */
+.tabbar{
+  flex:none; height:78px;
+  background:#fff;
+  display:flex; align-items:flex-start;
+  padding-top:10px;
+  border-top:1px solid var(--line);
+}
+.tab{
+  flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+  cursor:pointer; position:relative; color:#b9c0cc;
+  background:none; border:0; font-family:inherit; padding:0;
+}
+.tab .lb{ font-size:10.5px; letter-spacing:.3px; }
+.tab.act{ color:var(--blue); }
+.tab.act .lb{ font-weight:600; }
+.tab .badge{
+  position:absolute; top:-4px; right:calc(50% - 19px);
+  min-width:17px; height:17px; padding:0 5px;
+  background:var(--red); color:#fff;
+  font-size:10px; font-weight:700; line-height:17px; text-align:center;
+  border-radius:9px; border:1.5px solid #fff;
+}
+
+/* ---------- 头像（纯 CSS 剪影） ---------- */
+.avs{ display:flex; flex:none; }
+.av{
+  width:24px; height:24px; border-radius:50%;
+  border:1.8px solid #fff; margin-left:-8px;
+  position:relative; overflow:hidden; flex:none;
+}
+.avs .av:first-child{ margin-left:0; }
+.av::before{
+  content:""; position:absolute; top:17%; left:50%; transform:translateX(-50%);
+  width:40%; height:40%; border-radius:50%; background:rgba(255,255,255,.94);
+}
+.av::after{
+  content:""; position:absolute; top:64%; left:50%; transform:translateX(-50%);
+  width:74%; height:60%; border-radius:50%; background:rgba(255,255,255,.94);
+}
+.a1{ background:linear-gradient(140deg,#ffb199,#ff6a88); }
+.a2{ background:linear-gradient(140deg,#8ec5fc,#2b6bff); }
+.a3{ background:linear-gradient(140deg,#ffd88f,#f7971e); }
+.a4{ background:linear-gradient(140deg,#a8e6a3,#22b07d); }
+.a5{ background:linear-gradient(140deg,#c9b6ff,#7b5cff); }
+.a6{ background:linear-gradient(140deg,#ffc0d3,#ff5a8a); }
+
+.chev{ flex:none; color:#c2c8d2; }
+
+/* ============================================================
+   屏幕 1 — 首页「今天想聊点什么？」
+   ============================================================ */
+.home-head{
+  flex:none; padding:16px 24px 22px;
+  display:flex; align-items:flex-start; justify-content:space-between;
+}
+.home-head h1{
+  margin:0; color:#fff;
+  font-size:30px; font-weight:800; letter-spacing:-.5px; line-height:1.2;
+}
+.bell{
+  position:relative; width:36px; height:36px; flex:none; margin-top:2px;
+  display:flex; align-items:center; justify-content:center;
+  background:none; border:0; cursor:pointer; padding:0;
+}
+.bell .dot{
+  position:absolute; top:3px; right:4px;
+  width:9px; height:9px; border-radius:50%;
+  background:var(--red); border:2px solid var(--navy);
+}
+
+.cards{ flex:none; padding:0 14px; display:flex; flex-direction:column; gap:12px; }
+.bigcard{
+  display:flex; align-items:center; gap:15px;
+  padding:18px 16px 18px 18px; border-radius:24px;
+  background:#fff; border:0; width:100%; text-align:left;
+  cursor:pointer; font-family:inherit;
+  box-shadow:0 6px 18px rgba(9,20,48,.14);
+  transition:transform .13s ease;
+}
+.bigcard:active{ transform:scale(.98); }
+.bigcard.mint{ background:linear-gradient(115deg,#c9f2ea 0%,#e2f9f4 55%,#effcf9 100%); }
+.bigcard.pink{ background:linear-gradient(115deg,#ffd9d4 0%,#ffe7e3 55%,#fff1ef 100%); }
+.bigcard .ic{ flex:none; width:63px; height:63px; display:flex; align-items:center; justify-content:center; }
+.bigcard .ic svg{ width:100%; height:100%; }
+.bigcard .tx{ flex:1; min-width:0; }
+.bigcard .t{ font-size:20px; font-weight:800; color:var(--ink); letter-spacing:-.3px; display:block; }
+.bigcard .s{ font-size:12.5px; color:#7d8698; margin-top:5px; letter-spacing:-.1px; display:block; }
+
+.panel{
+  margin:22px 14px 0; flex:1; min-height:216px;
+  padding:0 0 18px;
+}
+.panel-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 6px 12px;
+}
+.panel-head .pt{ font-size:17px; font-weight:800; color:#fff; letter-spacing:-.2px; }
+.refresh{
+  display:flex; align-items:center; gap:4px;
+  font-size:12.5px; color:#93a0bb; background:none; border:0;
+  cursor:pointer; font-family:inherit; padding:4px;
+}
+.refresh svg{ transition:transform .4s ease; }
+.refresh.spin svg{ transform:rotate(360deg); }
+
+#rows{ transition:opacity .18s ease; }
+#rows.fade{ opacity:0; }
+
+.trow{
+  display:flex; align-items:center; gap:12px;
+  padding:14px 15px; width:100%; margin-bottom:11px;
+  background:#fff; border:0; border-radius:21px;
+  cursor:pointer; font-family:inherit; text-align:left;
+  box-shadow:0 5px 16px rgba(9,20,48,.13);
+  transition:transform .13s ease;
+}
+.trow:active{ transform:scale(.98); background:#fafbfc; }
+.tico{
+  flex:none; width:43px; height:43px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center; color:#fff;
+}
+.tico.b{ background:linear-gradient(150deg,#4d84ff,#1f5eff); }
+.tico.g{ background:linear-gradient(150deg,#3ed492,#17b573); }
+.tico.o{ background:linear-gradient(150deg,#ff8355,#ff5a2e); }
+.trow .tx{ flex:1; min-width:0; }
+.trow .t{
+  font-size:15px; font-weight:700; color:var(--ink); letter-spacing:-.2px; display:block;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.trow .s{ font-size:11.5px; color:var(--gray); margin-top:3.5px; display:block; }
+
+/* ============================================================
+   屏幕 2 — 对话「小法师陪你理一理」
+   ============================================================ */
+.navrow{
+  flex:none; display:flex; align-items:center; justify-content:space-between;
+  padding:6px 20px 0;
+}
+.navbtn{
+  width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+  background:none; border:0; color:#fff; cursor:pointer; padding:0;
+}
+.chat-head{ flex:none; padding:8px 24px 36px; }
+.chat-head h1{
+  margin:0; color:#fff; font-size:27px; font-weight:800; letter-spacing:-.5px;
+}
+.chat-head p{ margin:8px 0 0; color:#9aabce; font-size:12.5px; letter-spacing:-.1px; }
+
+.chatpanel{
+  margin:0 0; flex:1; min-height:0;
+  background:var(--panel);
+  border-radius:28px 28px 0 0;
+  padding:32px 14px 22px;
+  position:relative;
+}
+.wizard{
+  position:absolute; top:-24px; left:16px;
+  width:56px; height:56px; border-radius:50%;
+  background:#fff; box-shadow:0 4px 14px rgba(9,20,48,.18);
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+
+.bub{
+  background:#fff; border-radius:18px;
+  padding:14px 15px 12px; margin-bottom:10px;
+  box-shadow:0 2px 10px rgba(10,20,45,.06);
+  display:flex; align-items:flex-start; gap:10px;
+}
+.bub.first{ margin-left:60px; }
+.bub .bt{ flex:1; min-width:0; }
+.bub .l1{ font-size:15px; font-weight:700; color:var(--ink); letter-spacing:-.2px; display:block; }
+.bub .l2{ font-size:12.5px; color:#7d8698; margin-top:5px; line-height:1.55; display:block; }
+.bub .tm{ font-size:10.5px; color:#b6bdc9; margin-top:9px; display:block; }
+.play{
+  flex:none; width:28px; height:28px; border-radius:50%;
+  background:var(--blue); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  border:0; cursor:pointer; margin-top:4px;
+  box-shadow:0 3px 8px rgba(34,98,255,.3);
+  transition:transform .12s ease;
+}
+.play:active{ transform:scale(.9); }
+
+.moodlb{ font-size:15.5px; font-weight:800; color:var(--ink); margin:26px 4px 12px; letter-spacing:-.2px; }
+.moods{ display:flex; gap:7px; }
+.mood{
+  flex:1; border-radius:15px; border:2px solid transparent;
+  padding:10px 2px 9px;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  cursor:pointer; font-family:inherit;
+  transition:border-color .13s ease, transform .13s ease;
+}
+.mood:active{ transform:scale(.94); }
+.mood .lb{ font-size:11px; color:#5a6273; letter-spacing:-.3px; }
+.mood.sel{ border-color:var(--blue); }
+.mood.sel .lb{ color:var(--blue); font-weight:700; }
+.mood.m1{ background:#eaf1ff; } .mood.m2{ background:#e7f8ee; }
+.mood.m3{ background:#fff6e0; } .mood.m4{ background:#ffeceb; }
+.mood.m5{ background:#f1edfc; }
+
+.cta{
+  width:100%; height:54px; margin-top:26px;
+  background:var(--blue); color:#fff; border:0; border-radius:16px;
+  font-family:inherit; font-size:17px; font-weight:600; letter-spacing:.5px;
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  cursor:pointer; box-shadow:0 8px 20px rgba(34,98,255,.35);
+  transition:transform .13s ease;
+}
+.cta:active{ background:var(--blue-deep); transform:scale(.985); }
+.aidis{ text-align:center; font-size:10.5px; color:#667082; margin-top:12px; letter-spacing:.2px; }
+
+.inputbar{
+  flex:none; padding:10px 14px 14px;
+  display:flex; align-items:center; gap:10px;
+  background:#fff; border-top:1px solid var(--line);
+}
+.inputbar .field{
+  flex:1; height:44px; border-radius:22px;
+  background:#f1f2f6; display:flex; align-items:center; gap:8px;
+  padding:0 12px 0 17px;
+  font-size:13.5px; color:#a6aebc;
+}
+.inputbar .field span{ flex:1; }
+.plus{
+  flex:none; width:40px; height:40px; border-radius:50%;
+  background:var(--blue); color:#fff; border:0; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 10px rgba(34,98,255,.3);
+  transition:transform .12s ease;
+}
+.plus:active{ transform:scale(.9); }
+
+/* ============================================================
+   屏幕 3 — 共鸣「你们都在想」
+   ============================================================ */
+.res-head{ flex:none; padding:18px 24px 18px; position:relative; }
+.res-head h1{
+  margin:0; color:#fff; font-size:27px; font-weight:800;
+  line-height:1.35; letter-spacing:-.5px; max-width:235px; position:relative; z-index:1;
+}
+.res-head p{ margin:10px 0 0; color:#9aabce; font-size:12.5px; position:relative; z-index:1; }
+.deco{ position:absolute; top:4px; right:6px; z-index:0; pointer-events:none; }
+
+.seecard{
+  margin:0 14px; background:#fff; border-radius:22px;
+  padding:15px 15px 14px;
+  box-shadow:0 6px 18px rgba(9,20,48,.14);
+  position:relative; z-index:1;
+}
+.seecard .r1{ display:flex; align-items:center; gap:9px; }
+.seecard .nm{ font-size:16.5px; font-weight:800; color:var(--ink); letter-spacing:-.2px; }
+.qmark{
+  width:15px; height:15px; border-radius:50%; border:1.3px solid #c6cdd8;
+  color:#aab2c0; font-size:10px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; flex:none;
+}
+.pill{
+  margin-left:auto; background:var(--green-pill); color:#fff;
+  font-size:11.5px; font-weight:700; padding:4.5px 12px; border-radius:12px;
+  letter-spacing:.3px;
+}
+.seecard .sub{ font-size:11.5px; color:#8a93a6; margin-top:9px; }
+
+.topicwrap{
+  margin:13px 12px 0; flex:1;
+  background:#fff; border-radius:26px 26px 0 0;
+  padding:17px 14px 10px;
+}
+.topicwrap .th{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding:0 2px; }
+.topicwrap .th .t{ font-size:17px; font-weight:800; color:var(--ink); letter-spacing:-.2px; }
+.more{
+  display:flex; align-items:center; gap:3px;
+  font-size:12.5px; color:var(--gray); background:none; border:0;
+  cursor:pointer; font-family:inherit; padding:0;
+}
+.grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.tcard{
+  border-radius:16px; padding:13px 13px 12px; text-align:left;
+  border:0; cursor:pointer; font-family:inherit;
+  transition:transform .13s ease;
+}
+.tcard:active{ transform:scale(.96); }
+.tcard .t{
+  font-size:13.5px; font-weight:700; letter-spacing:-.4px; margin-bottom:5px;
+  color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.tcard .n{ font-size:11px; color:#8b93a3; margin-bottom:10px; }
+.tcard .h{ margin-right:3px; font-weight:800; }
+.tcard .av{ width:20px; height:20px; border-width:1.5px; margin-left:-7px; }
+/* 六卡配色 · 对齐参考图：蓝 / 紫 / 橙红 / 紫 / 绿 / 黄 */
+.c1{ background:#e8effe; } .c1 .h{ color:#2f6bff; }
+.c2{ background:#efeafd; } .c2 .h{ color:#8153f0; }
+.c3{ background:#ffe9e2; } .c3 .h{ color:#ff6a3d; }
+.c4{ background:#f0eafe; } .c4 .h{ color:#8153f0; }
+.c5{ background:#e7f6df; } .c5 .h{ color:#52b32a; }
+.c6{ background:#fdf3d7; } .c6 .h{ color:#e5a417; }
+
+.cta2{ margin:15px 0 12px; }
+
+/* ============================================================
+   屏幕 4 — 快速问问
+   ============================================================ */
+.askpanel{
+  margin:0; flex:1; min-height:0;
+  background:#fff; border-radius:28px 28px 0 0;
+  padding:22px 16px 22px;
+}
+.ask-label{ font-size:15.5px; font-weight:800; color:var(--ink); letter-spacing:-.2px; margin:0 2px 11px; }
+.ask-label.mt{ margin-top:22px; }
+.ask-input{
+  background:#f4f5f8; border-radius:16px;
+  padding:14px 15px 10px;
+}
+.ask-input textarea{
+  display:block; width:100%; min-height:72px;
+  border:0; background:none; outline:none; resize:none;
+  font-family:inherit; font-size:14.5px; line-height:1.65; color:var(--ink);
+  letter-spacing:-.1px; padding:0;
+}
+.ask-input textarea::placeholder{ color:#98a1b0; }
+.ask-count{ text-align:right; font-size:11px; color:#98a1b0; margin-top:4px; }
+.chips{ display:flex; flex-wrap:wrap; gap:9px; }
+.chip{
+  border-radius:19px; padding:9px 16px;
+  font-size:13px; font-weight:600; color:#3a4356;
+  border:1.8px solid transparent; cursor:pointer; font-family:inherit;
+  transition:border-color .13s ease, transform .13s ease;
+}
+.chip:active{ transform:scale(.94); }
+.chip.sel{ border-color:var(--blue); color:var(--blue); font-weight:700; }
+.k1{ background:#ffe9e2; } .k2{ background:#e8effe; } .k3{ background:#e7f6df; }
+.k4{ background:#f0eafe; } .k5{ background:#fdf3d7; } .k6{ background:#eef1f6; }
+.exq{
+  display:flex; align-items:center; gap:11px; width:100%;
+  padding:13px 4px; background:none; border:0; cursor:pointer;
+  font-family:inherit; text-align:left;
+  border-bottom:1px solid var(--line);
+}
+.exq:last-of-type{ border-bottom:0; }
+.exq:active{ background:#fafbfc; }
+.exq .q{ flex:none; font-size:14px; font-weight:800; }
+.exq .t{ flex:1; min-width:0; font-size:14px; color:#3a4356; letter-spacing:-.2px; }
+.exq .use{ flex:none; font-size:12px; color:var(--blue); font-weight:600; }
+
+/* ============================================================
+   真机全屏（去外框、隐藏模拟状态栏、处理安全区）
+   ============================================================ */
+@media (max-width: 500px){
+  body{ padding:0; background:var(--navy); overflow:auto; }
+  .phone{ transform:none !important; width:100%; }
+  .sidebtn{ display:none; }
+  .device{
+    width:100vw; height:100vh; height:100dvh;
+    border:0; border-radius:0; box-shadow:none;
+  }
+  .island,.homebar{ display:none; }
+  .statusbar{ display:none; } /* 真机用系统状态栏 */
+  .body{ padding-top:calc(env(safe-area-inset-top, 0px) + 6px); }
+  .tabbar{ padding-bottom:calc(env(safe-area-inset-bottom, 0px)); height:auto; min-height:64px; }
+}
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+  <div class="sidebtn sb-l1"></div>
+  <div class="sidebtn sb-l2"></div>
+  <div class="sidebtn sb-l3"></div>
+  <div class="sidebtn sb-r1"></div>
+
+  <div class="device">
+    <div class="island"></div>
+    <div class="homebar"></div>
+
+    <!-- ========================================================
+         屏幕 1 · 首页
+         ======================================================== -->
+    <section class="screen on" id="s-home">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="sb-right" data-sbicons></span>
+      </div>
+
+      <div class="body">
+        <div class="home-head">
+          <h1>今天想聊点什么？</h1>
+          <button class="bell" aria-label="消息">
+            <svg width="24" height="25" viewBox="0 0 24 25" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 0 0-12 0c0 7-2.7 8.8-2.7 8.8h17.4S18 16 18 9"/><path d="M13.7 21.5a2 2 0 0 1-3.4 0"/></svg>
+            <span class="dot"></span>
+          </button>
+        </div>
+
+        <div class="cards">
+          <!-- 快速问问 -->
+          <button class="bigcard" data-go="ask">
+            <span class="ic">
+              <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+                <path d="M7 13.5A6.5 6.5 0 0 1 13.5 7h22a6.5 6.5 0 0 1 6.5 6.5v13a6.5 6.5 0 0 1-6.5 6.5H22.6l-8.9 7.4a1.1 1.1 0 0 1-1.8-.85V33h-.4A4.5 4.5 0 0 1 7 28.5v-15Z" fill="url(#gb1)"/>
+                <circle cx="17.5" cy="20" r="2.5" fill="#fff"/><circle cx="24.5" cy="20" r="2.5" fill="#fff"/><circle cx="31.5" cy="20" r="2.5" fill="#fff"/>
+                <circle cx="38" cy="36.5" r="9.5" fill="#0f47d6"/>
+                <path d="M39.6 30.6 33.9 37.6h3.7l-1.3 5 5.9-7.2h-3.9l1.3-4.8Z" fill="#fff"/>
+                <defs><linearGradient id="gb1" x1="7" y1="7" x2="42" y2="33" gradientUnits="userSpaceOnUse"><stop stop-color="#4d84ff"/><stop offset="1" stop-color="#1f5eff"/></linearGradient></defs>
+              </svg>
+            </span>
+            <span class="tx"><span class="t">快速问问</span><span class="s">有问题，快速得到想法和建议</span></span>
+            <svg class="chev" width="9" height="16" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l6.5 7L1 15"/></svg>
+          </button>
+
+          <!-- 看看最近的自己 -->
+          <button class="bigcard mint" data-go="chat">
+            <span class="ic">
+              <svg width="54" height="48" viewBox="0 0 54 48" fill="none">
+                <path d="M31 7c9.4 0 16.5 6.6 16.5 14.8S40.4 36.6 31 36.6c-2.2 0-4.3-.35-6.2-1l-6.6 2.6a1 1 0 0 1-1.3-1.25l1.7-5A14.2 14.2 0 0 1 14.5 21.8C14.5 13.6 21.6 7 31 7Z" fill="#45cabb"/>
+                <circle cx="26" cy="21.5" r="2.3" fill="#0d403b"/><circle cx="36" cy="21.5" r="2.3" fill="#0d403b"/>
+                <path d="M27 27.5c1.9 1.9 6.1 1.9 8 0" stroke="#0d403b" stroke-width="2" stroke-linecap="round"/>
+                <path d="M14.5 18.5c6 0 10.8 4.6 10.8 10.2S20.5 38.9 14.5 38.9c-1.4 0-2.8-.22-4-.63l-4.4 1.7a.75.75 0 0 1-1-.94l1.1-3.4a9.9 9.9 0 0 1-3-6.93C3.2 23.1 8.5 18.5 14.5 18.5Z" fill="#2fae9f"/>
+                <circle cx="11" cy="28.5" r="1.8" fill="#0d403b"/><circle cx="18" cy="28.5" r="1.8" fill="#0d403b"/>
+                <path d="M11.8 32.8c1.4 1.4 4 1.4 5.4 0" stroke="#0d403b" stroke-width="1.7" stroke-linecap="round"/>
+                <path d="m43.5 4 1.1 3.7 3.7 1.1-3.7 1.1-1.1 3.7-1.1-3.7-3.7-1.1 3.7-1.1L43.5 4Z" fill="#fff"/>
+                <circle cx="49" cy="15" r="1.6" fill="#fff" fill-opacity=".8"/>
+              </svg>
+            </span>
+            <span class="tx"><span class="t">看看最近的自己</span><span class="s">梳理心情，记录小变化</span></span>
+            <svg class="chev" width="9" height="16" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l6.5 7L1 15"/></svg>
+          </button>
+
+          <!-- 找同频 -->
+          <button class="bigcard pink" data-go="resonate">
+            <span class="ic">
+              <svg width="54" height="48" viewBox="0 0 54 48" fill="none">
+                <path d="M16.8 41.5C9.5 35.7 2.5 30 2.5 22.2 2.5 16.4 6.8 12 12 12c3.1 0 5.9 1.6 7.6 4.1C21.3 13.6 24.1 12 27.2 12c5.2 0 9.5 4.4 9.5 10.2 0 7.8-7 13.5-14.3 19.3l-2.8 2.2-2.8-2.2Z" fill="url(#gh1)"/>
+                <path d="M35 33.6c-5.6-4.5-11-8.8-11-14.7 0-4.4 3.2-7.7 7.2-7.7 2.4 0 4.5 1.2 5.8 3.1a6.9 6.9 0 0 1 5.8-3.1c4 0 7.2 3.3 7.2 7.7 0 5.9-5.4 10.2-11 14.7l-2 1.6-2-1.6Z" fill="#ff8d9e"/>
+                <path d="M41.5 16.2c-1.6.1-3 1-3.6 2.4" stroke="#fff" stroke-opacity=".8" stroke-width="2" stroke-linecap="round"/>
+                <defs><linearGradient id="gh1" x1="3" y1="12" x2="35" y2="42" gradientUnits="userSpaceOnUse"><stop stop-color="#ff6a7e"/><stop offset="1" stop-color="#ff4a60"/></linearGradient></defs>
+              </svg>
+            </span>
+            <span class="tx"><span class="t">找同频</span><span class="s">找到懂你的人，一起聊聊</span></span>
+            <svg class="chev" width="9" height="16" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l6.5 7L1 15"/></svg>
+          </button>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <span class="pt">大家正在聊</span>
+            <button class="refresh" id="refresh">换一批
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+            </button>
+          </div>
+          <div id="rows"></div>
+        </div>
+      </div>
+
+      <nav class="tabbar" data-tabs></nav>
+    </section>
+
+    <!-- ========================================================
+         屏幕 2 · 对话
+         ======================================================== -->
+    <section class="screen" id="s-chat">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="sb-right" data-sbicons></span>
+      </div>
+
+      <div class="body">
+        <div class="navrow">
+          <button class="navbtn" data-go="home" aria-label="返回">
+            <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5 2 10l8.5 8.5"/></svg>
+          </button>
+          <button class="navbtn" aria-label="静音">
+            <svg width="24" height="21" viewBox="0 0 25 21" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4.2 6.6 7.8H3v5.4h3.6L11 16.8V4.2Z"/><path d="m16.5 8 5 5M21.5 8l-5 5"/></svg>
+          </button>
+        </div>
+
+        <div class="chat-head">
+          <h1>小法师陪你理一理</h1>
+          <p>有什么想聊的尽管说，我在这里听你说</p>
+        </div>
+
+        <div class="chatpanel">
+          <div class="wizard">
+            <svg width="50" height="50" viewBox="0 0 48 48" fill="none">
+              <path d="M24 9.5c1.8 0 9.6 15.8 9.6 18H14.4c0-2.2 7.8-18 9.6-18Z" fill="#2f6bff"/>
+              <ellipse cx="24" cy="28.2" rx="13.4" ry="3.9" fill="#0f47d6"/>
+              <path d="m24 15.5 1.1 2.9 2.9 1.1-2.9 1.1-1.1 2.9-1.1-2.9-2.9-1.1 2.9-1.1 1.1-2.9Z" fill="#ffd84d"/>
+              <circle cx="36.5" cy="14.5" r="1.7" fill="#ffd84d"/>
+              <path d="M11 10.5v5M8.5 13h5" stroke="#9db9ff" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M20 34.5c1.2 1.6 2.6 2.4 4 2.4s2.8-.8 4-2.4" stroke="#c9d6f2" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <div class="bub first">
+            <span class="bt">
+              <span class="l1">最近过得怎么样？</span>
+              <span class="l2">可以从今天，或者最近的一件事说起。</span>
+              <span class="tm">10:30</span>
+            </span>
+            <button class="play"><svg width="10" height="12" viewBox="0 0 10 12" fill="#fff"><path d="M1 .8a.8.8 0 0 1 1.2-.7l8 5.2a.8.8 0 0 1 0 1.4l-8 5.2A.8.8 0 0 1 1 11.2V.8Z"/></svg></button>
+          </div>
+
+          <div class="bub">
+            <span class="bt">
+              <span class="l1">听起来有点累呢 😌</span>
+              <span class="l2">换个角度想想，或许也有一点小收获？</span>
+              <span class="tm">10:31</span>
+            </span>
+            <button class="play"><svg width="10" height="12" viewBox="0 0 10 12" fill="#fff"><path d="M1 .8a.8.8 0 0 1 1.2-.7l8 5.2a.8.8 0 0 1 0 1.4l-8 5.2A.8.8 0 0 1 1 11.2V.8Z"/></svg></button>
+          </div>
+
+          <div class="bub">
+            <span class="bt">
+              <span class="l1">如果给这段时间一个关键词，</span>
+              <span class="l2">你觉得会是什么？</span>
+              <span class="tm">10:31</span>
+            </span>
+            <button class="play"><svg width="10" height="12" viewBox="0 0 10 12" fill="#fff"><path d="M1 .8a.8.8 0 0 1 1.2-.7l8 5.2a.8.8 0 0 1 0 1.4l-8 5.2A.8.8 0 0 1 1 11.2V.8Z"/></svg></button>
+          </div>
+
+          <div class="moodlb">你现在的状态是？</div>
+          <div class="moods" id="moods">
+            <button class="mood m1 sel">
+              <svg width="31" height="31" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#5b8def"/><circle cx="11.3" cy="13.8" r="2" fill="#1c2333"/><circle cx="20.7" cy="13.8" r="2" fill="#1c2333"/><path d="M11.5 20.8h9" stroke="#1c2333" stroke-width="2.1" stroke-linecap="round"/></svg>
+              <span class="lb">平静</span>
+            </button>
+            <button class="mood m2">
+              <svg width="31" height="31" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#3fc47c"/><path d="M9.2 13.6c1.1-1.5 3.2-1.5 4.3 0M18.5 13.6c1.1-1.5 3.2-1.5 4.3 0" stroke="#1c2333" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M10.3 19.3c2.7 3.4 8.7 3.4 11.4 0" stroke="#1c2333" stroke-width="2.1" stroke-linecap="round" fill="none"/></svg>
+              <span class="lb">还不错</span>
+            </button>
+            <button class="mood m3">
+              <svg width="31" height="31" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#ffc53d"/><path d="M9 15c1.2 1.3 3.4 1.3 4.6 0M18.4 15c1.2 1.3 3.4 1.3 4.6 0" stroke="#1c2333" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M12 21.8c1.8-1.3 6.2-1.3 8 0" stroke="#1c2333" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+              <span class="lb">有点累</span>
+            </button>
+            <button class="mood m4">
+              <svg width="31" height="31" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#ff6b5e"/><path d="m9 11.5 4.6 2.2M23 11.5l-4.6 2.2" stroke="#1c2333" stroke-width="2" stroke-linecap="round"/><circle cx="11.8" cy="16.8" r="1.8" fill="#1c2333"/><circle cx="20.2" cy="16.8" r="1.8" fill="#1c2333"/><path d="M12 22.6c2.1-2 5.9-2 8 0" stroke="#1c2333" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+              <span class="lb">有点烦</span>
+            </button>
+            <button class="mood m5">
+              <svg width="31" height="31" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="#9b7ef0"/><path d="M10 14.6h4.2M17.8 14.6H22" stroke="#1c2333" stroke-width="2" stroke-linecap="round"/><path d="M11.8 22.4c2.2-2.6 6.2-2.6 8.4 0" stroke="#1c2333" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+              <span class="lb">低落</span>
+            </button>
+          </div>
+
+          <button class="cta">
+            <svg width="16" height="21" viewBox="0 0 18 22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="1" width="7" height="11.5" rx="3.5" fill="#fff" stroke="none"/><path d="M2 10a7 7 0 0 0 14 0"/><path d="M9 17v4"/></svg>
+            继续说说
+          </button>
+          <div class="aidis">内容由 AI 生成，仅供参考</div>
+        </div>
+      </div>
+
+      <div class="inputbar">
+        <div class="field">
+          <span>你还可以输入文字…</span>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9aa2b0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+        </div>
+        <button class="plus"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      </div>
+
+      <nav class="tabbar" data-tabs></nav>
+    </section>
+
+    <!-- ========================================================
+         屏幕 3 · 共鸣
+         ======================================================== -->
+    <section class="screen" id="s-resonate">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="sb-right" data-sbicons></span>
+      </div>
+
+      <div class="body">
+        <div class="res-head">
+          <svg class="deco" width="160" height="130" viewBox="0 0 160 130" fill="none">
+            <circle cx="56" cy="41" r="30" fill="#2f6bff"/>
+            <path d="M98 8c14.4 0 26 9.3 26 20.7 0 11.5-11.6 20.8-26 20.8-3 0-5.9-.4-8.5-1.1l-9.6 3.9a1 1 0 0 1-1.32-1.28l3-7.1c-4.6-3.8-6.9-9.2-6.9-15.3C74.7 17.3 83.6 8 98 8Z" fill="#ff5a52"/>
+            <circle cx="90.5" cy="28.5" r="3.4" fill="#fff"/><circle cx="101" cy="28.5" r="3.4" fill="#fff"/><circle cx="111.5" cy="28.5" r="3.4" fill="#fff"/>
+            <circle cx="122" cy="72" r="19" fill="#6fdc98"/>
+            <path d="M60 56c16.6 0 30 10.3 30 23S76.6 102 60 102c-3.6 0-7-.5-10.2-1.4l-11.3 4.6a1 1 0 0 1-1.33-1.28l3.6-8.5C36.1 91.4 32 85.7 32 79c0-12.7 11.4-23 28-23Z" fill="#fff"/>
+            <circle cx="49.5" cy="79" r="3.6" fill="#2f6bff"/><circle cx="60" cy="79" r="3.6" fill="#2f6bff"/><circle cx="70.5" cy="79" r="3.6" fill="#2f6bff"/>
+          </svg>
+          <h1>你们都在想：<br>怎样把话说清楚</h1>
+          <p>在这里，遇见懂你的同频伙伴</p>
+        </div>
+
+        <div class="seecard">
+          <div class="r1">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f1a2e" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span class="nm">愿意被看见</span>
+            <span class="qmark">?</span>
+            <span class="pill">已开启</span>
+            <svg class="chev" width="8" height="14" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-left:9px"><path d="M1 1l6.5 7L1 15"/></svg>
+          </div>
+          <div class="sub">开启后，你的分享可能被同频的人看到</div>
+        </div>
+
+        <div class="topicwrap">
+          <div class="th">
+            <span class="t">同频话题</span>
+            <button class="more">更多话题
+              <svg width="7" height="12" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l6.5 7L1 15"/></svg>
+            </button>
+          </div>
+
+          <div class="grid" id="grid"></div>
+
+          <button class="cta cta2">
+            <svg width="22" height="19" viewBox="0 0 24 20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 19v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="5" r="4"/><path d="M23 19v-2a4 4 0 0 0-3-3.9"/><path d="M17 1.1a4 4 0 0 1 0 7.8"/></svg>
+            看看同频的人
+          </button>
+        </div>
+      </div>
+
+      <nav class="tabbar" data-tabs></nav>
+    </section>
+
+    <!-- ========================================================
+         屏幕 4 · 快速问问
+         ======================================================== -->
+    <section class="screen" id="s-ask">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="sb-right" data-sbicons></span>
+      </div>
+
+      <div class="body">
+        <div class="navrow">
+          <button class="navbtn" data-go="home" aria-label="返回">
+            <svg width="12" height="20" viewBox="0 0 12 20" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5 2 10l8.5 8.5"/></svg>
+          </button>
+          <span></span>
+        </div>
+
+        <div class="chat-head" style="padding-bottom:20px">
+          <h1>快速问问</h1>
+          <p>一句话说清问题，快速得到想法和建议</p>
+        </div>
+
+        <div class="askpanel">
+          <div class="ask-label">你想问的是</div>
+          <div class="ask-input">
+            <textarea id="askText" maxlength="200" rows="3" placeholder="把问题写下来，比如：我要不要主动找他聊一次？"></textarea>
+            <div class="ask-count"><span id="askCount">0</span>/200</div>
+          </div>
+
+          <div class="ask-label mt">选个分类，回答更贴心</div>
+          <div class="chips" id="chips">
+            <button class="chip k1 sel">感情</button>
+            <button class="chip k2">工作</button>
+            <button class="chip k3">学业</button>
+            <button class="chip k4">人际</button>
+            <button class="chip k5">自我</button>
+            <button class="chip k6">日常</button>
+          </div>
+
+          <div class="ask-label mt">大家常问</div>
+          <div id="exqs">
+            <button class="exq"><span class="q" style="color:#ff6a3d">#</span><span class="t">他还会联系我吗？</span><span class="use">问这个</span></button>
+            <button class="exq"><span class="q" style="color:#2f6bff">#</span><span class="t">这次面试能不能过？</span><span class="use">问这个</span></button>
+            <button class="exq"><span class="q" style="color:#8153f0">#</span><span class="t">她是不是讨厌我？</span><span class="use">问这个</span></button>
+          </div>
+
+          <button class="cta" data-go="chat" style="margin-top:24px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5h6L11 22l8.5-11.5h-6L13 2Z"/></svg>
+            马上问问
+          </button>
+          <div class="aidis">回答由 AI 生成，仅供参考</div>
+        </div>
+      </div>
+
+      <nav class="tabbar" data-tabs></nav>
+    </section>
+  </div>
+</div>
+
+<script>
+/* ---------- 状态栏右侧图标（三屏共用） ---------- */
+const SB_ICONS = `
+  <svg width="18" height="12" viewBox="0 0 18 12" fill="#fff"><rect x="0" y="7.5" width="3" height="4.5" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+  <svg width="18" height="13" viewBox="0 0 20 14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M2.2 5.2a12 12 0 0 1 15.6 0"/><path d="M5.5 8.7a7 7 0 0 1 9 0"/><circle cx="10" cy="12" r="1.7" fill="#fff" stroke="none"/></svg>
+  <svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="21" height="11" rx="3.4" fill="none" stroke="#fff" stroke-opacity=".45"/><rect x="2" y="2" width="18" height="8" rx="2" fill="#fff"/><path d="M23.5 4v4a2.2 2.2 0 0 0 0-4Z" fill="#fff" fill-opacity=".45"/></svg>`;
+document.querySelectorAll('[data-sbicons]').forEach(n => n.innerHTML = SB_ICONS);
+
+/* ---------- 底部 Tab ---------- */
+const TABS = [
+  { id:'home', lb:'于你', go:'home',
+    ic:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.9"/><circle cx="12" cy="12" r="3.4" fill="currentColor"/>',
+    icAct:'<circle cx="12" cy="12" r="9.5" fill="currentColor"/><circle cx="12" cy="12" r="3.6" fill="#fff"/>' },
+  { id:'chat', lb:'对话', go:'chat',
+    ic:'<path d="M3 6.5A3.5 3.5 0 0 1 6.5 3h11A3.5 3.5 0 0 1 21 6.5v7a3.5 3.5 0 0 1-3.5 3.5H10l-4.6 3.7A.7.7 0 0 1 4.3 20V17a1.3 1.3 0 0 1-1.3-1.3V6.5Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>' },
+  { id:'resonate', lb:'共鸣', go:'resonate',
+    ic:'<path d="M12 20.5C6.5 16.3 2.5 12.8 2.5 8.9 2.5 5.9 4.9 3.5 8 3.5c1.8 0 3.3.9 4 2.2.7-1.3 2.2-2.2 4-2.2 3.1 0 5.5 2.4 5.5 5.4 0 3.9-4 7.4-9.5 11.6Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>',
+    icAct:'<path d="M12 20.5C6.5 16.3 2.5 12.8 2.5 8.9 2.5 5.9 4.9 3.5 8 3.5c1.8 0 3.3.9 4 2.2.7-1.3 2.2-2.2 4-2.2 3.1 0 5.5 2.4 5.5 5.4 0 3.9-4 7.4-9.5 11.6Z" fill="currentColor"/>' },
+  { id:'msg', lb:'消息', badge:'2',
+    ic:'<path d="M18 8.8a6 6 0 0 0-12 0c0 6.8-2.8 8.6-2.8 8.6h17.6S18 15.6 18 8.8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 0 1-3.4 0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>' },
+  { id:'me', lb:'我的',
+    ic:'<circle cx="12" cy="8.2" r="3.8" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>' },
+];
+
+function renderTabs(nav, activeId){
+  nav.innerHTML = TABS.map(t=>{
+    const on = t.id === activeId;
+    const path = on && t.icAct ? t.icAct : t.ic;
+    return `<button class="tab ${on?'act':''}" ${t.go?`data-go="${t.go}"`:''}>
+      <svg width="24" height="24" viewBox="0 0 24 24">${path}</svg>
+      <span class="lb">${t.lb}</span>
+      ${t.badge?`<span class="badge">${t.badge}</span>`:''}
+    </button>`;
+  }).join('');
+}
+
+/* ---------- 大家正在聊（两批可切换） ---------- */
+const ROW_ICONS = {
+  b:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M9 3 7 21M17 3l-2 18M3.5 8.5h17M2.5 15.5h17"/></svg>',
+  g:'<svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 21c0-6 3-9 8-10-1 6-4 9-8 10Z"/><path d="M11.4 21C11.4 15.6 8.8 12 4 11c.9 5.6 3.5 9 7.4 10Z" opacity=".82"/><rect x="11.1" y="14" width="1.7" height="8" rx=".8"/></svg>',
+  o:'<svg width="19" height="19" viewBox="0 0 24 24" fill="#fff"><path d="M3 6.5A3.5 3.5 0 0 1 6.5 3h11A3.5 3.5 0 0 1 21 6.5v7a3.5 3.5 0 0 1-3.5 3.5H10l-4.8 3.9a.7.7 0 0 1-1.2-.6V17h-.5A.5.5 0 0 1 3 16.5v-10Z"/></svg>',
+};
+const ROW_BATCHES = [
+  [
+    { ic:'b', t:'# 工作压力大怎么办', s:'1.2万人在聊 · 356条新回复', av:['a1','a2','a3'] },
+    { ic:'g', t:'# 想改变又怕失败',   s:'9238人在聊 · 128条新回复', av:['a4','a5','a6'] },
+    { ic:'o', t:'# 如何建立亲密关系', s:'7621人在聊 · 97条新回复',  av:['a2','a6','a3'] },
+  ],
+  [
+    { ic:'b', t:'# 总是想太多怎么办', s:'1.5万人在聊 · 402条新回复', av:['a5','a3','a1'] },
+    { ic:'g', t:'# 毕业后的迷茫',     s:'8156人在聊 · 143条新回复', av:['a2','a4','a6'] },
+    { ic:'o', t:'# 和父母好好说话',   s:'6890人在聊 · 76条新回复',  av:['a6','a1','a4'] },
+  ],
+];
+let rowBatch = 0;
+function renderRows(){
+  document.getElementById('rows').innerHTML = ROW_BATCHES[rowBatch].map(r=>`
+    <button class="trow" data-go="resonate">
+      <span class="tico ${r.ic}">${ROW_ICONS[r.ic]}</span>
+      <span class="tx"><span class="t">${r.t}</span><span class="s">${r.s}</span></span>
+      <span class="avs">${r.av.map(a=>`<i class="av ${a}"></i>`).join('')}</span>
+      <svg class="chev" width="8" height="14" viewBox="0 0 9 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l6.5 7L1 15"/></svg>
+    </button>`).join('');
+}
+renderRows();
+
+document.getElementById('refresh').addEventListener('click', ()=>{
+  const btn = document.getElementById('refresh');
+  const rows = document.getElementById('rows');
+  btn.classList.add('spin');
+  rows.classList.add('fade');
+  setTimeout(()=>{
+    rowBatch = 1 - rowBatch;
+    renderRows();
+    rows.classList.remove('fade');
+  }, 180);
+  setTimeout(()=>btn.classList.remove('spin'), 420);
+});
+
+/* ---------- 同频话题网格 ---------- */
+const TOPICS = [
+  { c:'c1', t:'怎样把话说清楚',   n:'1.8万人在聊', av:['a2','a1','a4','a3'] },
+  { c:'c2', t:'表达需求不尴尬',   n:'1.3万人在聊', av:['a3','a6','a2','a5'] },
+  { c:'c3', t:'说了也白说怎么办', n:'9867人在聊',  av:['a1','a5','a4','a2'] },
+  { c:'c4', t:'沟通中的误会',     n:'7654人在聊',  av:['a5','a2','a3','a6'] },
+  { c:'c5', t:'想法太多理不清',   n:'6421人在聊',  av:['a4','a3','a1','a2'] },
+  { c:'c6', t:'说出口的勇气',     n:'5299人在聊',  av:['a6','a4','a5','a1'] },
+];
+document.getElementById('grid').innerHTML = TOPICS.map(x=>`
+  <button class="tcard ${x.c}">
+    <div class="t"><span class="h">#</span>${x.t}</div>
+    <div class="n">${x.n}</div>
+    <div class="avs">${x.av.map(a=>`<i class="av ${a}"></i>`).join('')}</div>
+  </button>`).join('');
+
+/* ---------- 路由 ---------- */
+const TAB_OF = { home:'home', chat:'chat', resonate:'resonate', ask:'home' };
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  const el = document.getElementById('s-' + id);
+  if(!el) return;
+  el.classList.add('on');
+  el.querySelector('.body').scrollTop = 0;
+  el.querySelectorAll('[data-tabs]').forEach(n=>renderTabs(n, TAB_OF[id]));
+}
+document.addEventListener('click', e=>{
+  const btn = e.target.closest('[data-go]');
+  if(btn) go(btn.dataset.go);
+
+  const mood = e.target.closest('.mood');
+  if(mood){
+    document.querySelectorAll('#moods .mood').forEach(m=>m.classList.remove('sel'));
+    mood.classList.add('sel');
+  }
+
+  const chip = e.target.closest('.chip');
+  if(chip){
+    document.querySelectorAll('#chips .chip').forEach(c=>c.classList.remove('sel'));
+    chip.classList.add('sel');
+  }
+
+  const exq = e.target.closest('.exq');
+  if(exq){
+    const ta = document.getElementById('askText');
+    ta.value = exq.querySelector('.t').textContent;
+    ta.dispatchEvent(new Event('input'));
+  }
+});
+
+/* 快速问问：字数统计 */
+document.getElementById('askText').addEventListener('input', e=>{
+  document.getElementById('askCount').textContent = e.target.value.length;
+});
+/* 支持 #home / #chat / #resonate 直达 */
+const initial = location.hash.replace('#','');
+go(TAB_OF[initial] ? initial : 'home');
+addEventListener('hashchange', ()=>{
+  const h = location.hash.replace('#','');
+  if(TAB_OF[h]) go(h);
+});
+
+/* ---------- 桌面端：整机自适应缩放 ----------
+   transform:scale() 不改变元素的布局尺寸，flex 居中仍按原始 866px 计算，
+   窗口偏矮时上下会同时溢出并被 overflow:hidden 裁掉。
+   用负 margin 把布局盒收缩到缩放后的实际尺寸，居中才是对的。       */
+const phone = document.getElementById('phone');
+const DEV_W = 390 + 22, DEV_H = 844 + 22;   // 含 11px 边框
+function fit(){
+  if (matchMedia('(max-width: 500px)').matches){
+    phone.style.transform = ''; phone.style.margin = ''; return;
+  }
+  const s = Math.min(1, (innerHeight - 24) / DEV_H, (innerWidth - 24) / DEV_W);
+  phone.style.transform = `scale(${s})`;
+  phone.style.margin = `${(s - 1) * DEV_H / 2}px ${(s - 1) * DEV_W / 2}px`;
+}
+addEventListener('resize', fit);
+fit();
+</script>
+</body>
+</html>

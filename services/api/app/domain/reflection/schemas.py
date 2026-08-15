@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 METHOD_VERSION: Literal["xlr-six-palace-v1"] = "xlr-six-palace-v1"
-INPUT_RULE_VERSION: Literal["three-number-0-99-v1"] = "three-number-0-99-v1"
+INPUT_RULE_VERSION: Literal["three-number-1-99-v1"] = "three-number-1-99-v1"
 CORPUS_VERSION: Literal["2026-08-v1"] = "2026-08-v1"
 DRAFT_CORPUS_VERSION: Literal["2026-08-draft-v1"] = "2026-08-draft-v1"
 
@@ -52,7 +52,7 @@ class ThreeNumberResult(BaseModel):
     """确定性计算结果；不包含任何生成式解释。"""
 
     method_version: Literal["xlr-six-palace-v1"] = METHOD_VERSION
-    input_rule_version: Literal["three-number-0-99-v1"] = INPUT_RULE_VERSION
+    input_rule_version: Literal["three-number-1-99-v1"] = INPUT_RULE_VERSION
     numbers: tuple[int, int, int]
     result: tuple[Palace, Palace, Palace]
     positions: tuple[PositionResult, PositionResult, PositionResult]
@@ -164,7 +164,7 @@ class ReflectionReading(ReadingDraft):
     """可交给结果页的完整结构化解释。"""
 
     method_version: Literal["xlr-six-palace-v1"] = METHOD_VERSION
-    input_rule_version: Literal["three-number-0-99-v1"] = INPUT_RULE_VERSION
+    input_rule_version: Literal["three-number-1-99-v1"] = INPUT_RULE_VERSION
     corpus_version: Literal["2026-08-v1"] = CORPUS_VERSION
     draft_corpus_version: Literal["2026-08-draft-v1"] = DRAFT_CORPUS_VERSION
     numbers: tuple[int, int, int]

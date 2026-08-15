@@ -19,7 +19,6 @@ from app.domain.reflection import (
         ((2, 5, 2), (Palace.LIU_LIAN, Palace.KONG_WANG, Palace.DA_AN)),
         ((6, 6, 6), (Palace.KONG_WANG, Palace.XIAO_JI, Palace.CHI_KOU)),
         ((3, 3, 3), (Palace.SU_XI, Palace.XIAO_JI, Palace.DA_AN)),
-        ((0, 0, 0), (Palace.KONG_WANG, Palace.XIAO_JI, Palace.CHI_KOU)),
         ((99, 99, 99), (Palace.SU_XI, Palace.XIAO_JI, Palace.DA_AN)),
     ],
 )
@@ -47,8 +46,8 @@ def test_result_uses_fixed_method_and_position_names() -> None:
 
 
 @pytest.mark.parametrize("position", range(3))
-def test_every_number_from_zero_to_99_is_valid_in_each_position(position: int) -> None:
-    for number in range(100):
+def test_every_number_from_one_to_99_is_valid_in_each_position(position: int) -> None:
+    for number in range(1, 100):
         numbers = [1, 1, 1]
         numbers[position] = number
         result = calculate_three_numbers(*numbers)
@@ -59,7 +58,7 @@ def test_every_number_from_zero_to_99_is_valid_in_each_position(position: int) -
 
 
 def test_same_input_always_returns_the_same_result() -> None:
-    for numbers in ((0, 0, 0), (1, 1, 1), (42, 17, 99), (99, 99, 99)):
+    for numbers in ((1, 1, 1), (6, 6, 6), (42, 17, 99), (99, 99, 99)):
         first = calculate_three_numbers(*numbers)
         second = calculate_three_numbers(*numbers)
 
@@ -69,6 +68,9 @@ def test_same_input_always_returns_the_same_result() -> None:
 @pytest.mark.parametrize(
     "numbers",
     [
+        (0, 2, 3),
+        (2, 0, 3),
+        (2, 3, 0),
         (-1, 2, 3),
         (100, 2, 3),
         (2.5, 3, 4),
