@@ -272,6 +272,7 @@ button.cell:active{ transform:scale(.975); }
   display:flex; align-items:center; justify-content:center;
   font-size:25px; font-weight:700; color:var(--ink-2);
   font-variant-numeric:tabular-nums; transition:color .16s ease;
+  cursor:pointer;   /* 可点选，不是只能拖 */
 }
 /* 选中项落在墨块上必须反色。只改颜色不改字号 —— 改字号滚动时会抖 */
 .col .it.sel{ color:var(--white); font-weight:800; }
@@ -908,6 +909,25 @@ S.nums = [1,1,1];
     target = Math.max(1, Math.min(MAXN, target));
     kbUntil = performance.now() + 600;
     col.scrollTo({ top:(target-1)*ITEM, behavior:'smooth' });
+  });
+
+  /* 点一下数字就把它滚到选中位。
+     原来只能拖——但滚轮长得就像一列可点的数字，人的第一反应是点「7」而不是把它
+     拖到中间，点了没反应就会以为页面坏了。iOS 原生滚轮同样支持点选，这是符合
+     预期的行为，不是额外功能。
+     用 scrollTo 而不是直接改 S.nums：让它和拖动走同一条路径（scroll → sync），
+     选中态、触觉、touched() 都不用在这里重复一遍。 */
+  col.addEventListener('click', e => {
+    const it = e.target.closest('.it');
+    if (!it) return;
+    const idx = [...col.querySelectorAll('.it')].indexOf(it);
+    if (idx < 0) return;
+    target = idx + 1;
+    kbUntil = performance.now() + 600;   // 和键盘同一个护栏，别被异步 scroll 覆盖
+    col.scrollTo({ top: idx * ITEM, behavior: 'smooth' });
+    /* 点的正好是已选中那个数时，scrollTo 不产生滚动，sync 不会跑，
+       心事输入框就永远不出现。这里直接补一次——touched() 是幂等的。 */
+    touched();
   });
 
   const ordSpan = () => document.querySelectorAll('#s-num .ord span')[ci];
