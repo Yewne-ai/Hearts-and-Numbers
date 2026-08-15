@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#F4E5C3">
-<title>于你 Yewne · V4 便当</title>
+<!-- 未上线的 MVP：可以拿链接打开，但不该被搜索引擎收录。 -->
+<meta name="robots" content="noindex, nofollow">
+<title>于你 Yewne · 三数问心</title>
 <style>
 /* ============================================================
    于你 Yewne — Demo V4「便当 · 治愈」
@@ -670,6 +672,79 @@ import { buildReading, PALACES, METHOD_VERSION, CORPUS_VERSION } from '../v2-pro
    在这里声明是因为下面 LAST_R 等调用要用到（const 不提升）。 */
 const MAXN = 99, ITEM = 44;
 const S = { nums: [1,1,1], worry: '', reading: null, saved: false };
+
+/* ---------- 后端 ----------
+   线上和 /v1 同源，所以不用配跨域。带 ?local=1 时走本地 corpus.js，
+   这是给没有后端的场合（本地看稿、断网评审）留的口子，页面上会明确标出来——
+   本地引擎和后端 calculator.py 在全部 970,299 种输入上校验过逐点一致，
+   但解释是本地固定文案，不是模型现写的，所以必须让人看得见区别。 */
+const API = '/v1/reflection/reading';
+const LOCAL_ONLY = new URLSearchParams(location.search).has('local');
+
+/* 解释是怎么来的，在 colophon 里如实标注。llm 是正常情况，不加注；
+   另外两种都要说明，否则页面在替模型背书它没写过的话（§8.10）。 */
+const MODE_NOTE = {
+  'fixed-fallback': ' ／ 解释为固定文案（模型未能生成）',
+  'local-demo':     ' ／ 本地演示数据',
+};
+
+/* 后端返回的 palace 是「留连」这样的中文标签，前端要的是宫位对象 */
+const byLabel = Object.fromEntries(PALACES.map(p => [p.label, p]));
+
+/* 把 ReflectionReading 映射成结果页认识的形状。字段对不上时直接抛，
+   不做静默兜底——契约变了要立刻看得见，而不是渲染出半张空卡片。 */
+function fromApi(j){
+  const pos = j.positions.map(p => {
+    const palace = byLabel[p.palace];
+    if (!palace) throw new Error('未知宫位: ' + p.palace);
+    return { name: p.name, palace, interpretation: p.interpretation };
+  });
+  return {
+    numbers: j.numbers,
+    summary: j.summary,
+    positions: pos,
+    transitions: j.transitions.map(t => t.interpretation),
+    uncertainty: j.uncertainty,
+    controllable: j.controllable_factors,
+    micro_action: j.micro_action,
+    reflection_question: j.reflection_question,
+    scene_label: j.scene_label,
+    /* 解释是模型现写还是退回固定文案，如实带到界面上（§10.5、§8.10） */
+    mode: j.generation_mode,
+    fallback_reason: j.fallback_reason || '',
+  };
+}
+
+/* 返回 {ok:true, reading} / {ok:false, kind, ...}。不抛异常，
+   因为调用点要按 kind 决定显示重试还是场景选择。 */
+async function fetchReading(nums, question, scene){
+  let res;
+  try {
+    res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        numbers: nums,
+        question: question || '（未填写）',
+        ...(scene ? { scene } : {}),   // 只有用户选过才带，否则让后端自己识别
+      }),
+    });
+  } catch (e) {
+    return { ok:false, kind:'network', msg:'连不上服务器' };
+  }
+  if (res.status === 409) {
+    const d = await res.json().catch(() => ({}));
+    const det = d.detail || d;
+    return { ok:false, kind:'scene', labels: det.labels || {} };
+  }
+  if (res.status === 429) return { ok:false, kind:'rate', msg:'问得有点频繁，等一分钟再试' };
+  if (!res.ok)             return { ok:false, kind:'server', msg:'服务器返回 ' + res.status };
+  try {
+    return { ok:true, reading: fromApi(await res.json()) };
+  } catch (e) {
+    return { ok:false, kind:'shape', msg:String(e.message || e) };
+  }
+}
 /* hash 直达时铺的「今天这一次」。刻意和 LAST（三天前那次）不同，
    否则首页回顾块和当前会话会撞成同一件事 */
 const SAMPLE = '这次面试没消息，我是不是没戏了。';
@@ -865,10 +940,63 @@ function syncNums(animate = true){
   document.getElementById('numMeta').textContent = S.nums.join(' · ');
 }
 
-document.getElementById('toReading').addEventListener('click', () => {
-  S.reading = buildReading(...S.nums, MAXN);   // 1–99 模式
-  renderReading(); go('read');
-});
+/* 结果页在等后端时的三种非成功状态。宫位一律先算好并显示——它是纯计算，
+   和模型无关，藏起来反而让人以为「什么都没发生」。缺的是解释，就只说解释缺了。
+   §10.5：展示可重试状态，不伪造结果。 */
+function renderPending(kind, msg){
+  const nums = S.nums;
+  const palaces = buildReading(...nums, MAXN).positions;   // 只取宫位，不用其解释
+  const sig = palaces.map(p =>
+    `<span class="pdot lg" style="background:${tint(p.palace.id)}">${mark(p.palace.id,20)}</span>`
+  ).join('');
+  const body = {
+    loading: { t:'正在写这一次的解释…', d:'宫位已经算好了，解释还在生成。', btn:'' },
+    retry:   { t:'解释没能生成', d:msg + '。宫位是算出来的，不受影响；解释宁可不给，也不编一个。', btn:'重试' },
+  }[kind];
+  document.getElementById('readMeta').textContent = nums.join(' · ');
+  document.getElementById('readBody').innerHTML = `
+    <div class="bento">
+      <div class="cell wide"><div class="k">${nums.join(' · ')}</div>
+        <div class="last-sig" style="margin:10px 0 12px">${sig}</div>
+        <h1 class="t lg">${body.t}</h1>
+        <div class="uncert" style="margin-top:10px">${body.d}</div>
+      </div>
+      ${body.btn ? `<div class="cell wide" style="background:transparent;padding:0 4px">
+        <button class="pill" id="retryRead">${body.btn}</button></div>` : ''}
+    </div>`;
+  const rb = document.getElementById('retryRead');
+  if (rb) rb.addEventListener('click', submitReading);
+}
+
+/* 场景识别并列/无命中时，让用户自己选（§4.5 把选择权还给用户） */
+function renderSceneChoice(labels){
+  const opts = Object.entries(labels).map(([k,v]) =>
+    `<button class="pill" data-scene="${k}" style="margin:0 8px 8px 0">${v}</button>`).join('');
+  document.getElementById('readBody').innerHTML = `
+    <div class="bento"><div class="cell wide">
+      <h1 class="t lg">这件事更接近哪一类？</h1>
+      <div class="uncert" style="margin:10px 0 14px">
+        只写了这些还判断不出来，选一个我们就接着往下说。</div>
+      <div>${opts}</div>
+    </div></div>`;
+  document.querySelectorAll('[data-scene]').forEach(b =>
+    b.addEventListener('click', () => submitReading(b.dataset.scene)));
+}
+
+async function submitReading(scene){
+  if (LOCAL_ONLY){                       // 断网/本地看稿：明确标注，不假装是线上
+    S.reading = buildReading(...S.nums, MAXN);
+    S.reading.mode = 'local-demo';
+    renderReading(); go('read'); return;
+  }
+  go('read'); renderPending('loading');
+  const r = await fetchReading(S.nums, worryText(), scene);
+  if (r.ok){ S.reading = r.reading; renderReading(); }
+  else if (r.kind === 'scene') renderSceneChoice(r.labels);
+  else renderPending('retry', r.msg);
+}
+
+document.getElementById('toReading').addEventListener('click', () => submitReading());
 
 /* ---------- 结果 ---------- */
 function renderReading(){
@@ -894,7 +1022,7 @@ function renderReading(){
       <div class="cell wide reading">${rows}</div>
       <div class="cell wide" style="background:transparent;padding:0 4px">
         <div class="uncert">${r.uncertainty}</div>
-        <div class="colo">${r.numbers.join(' · ')} ／ ${METHOD_VERSION} ／ ${CORPUS_VERSION}</div>
+        <div class="colo">${r.numbers.join(' · ')} ／ ${METHOD_VERSION} ／ ${CORPUS_VERSION}${MODE_NOTE[r.mode] || ''}</div>
       </div>
     </div>
     <div class="sec" style="padding-bottom:18px">
@@ -1108,7 +1236,12 @@ function ensureReading(){
   if(S.reading) return;
   S.nums=[2,5,2];
   if(!S.worry){ S.worry=SAMPLE; worryEl.value=SAMPLE; }
-  syncNums(false); S.reading=buildReading(2,5,2,MAXN); renderReading();
+  /* 从 #chat / #after / #map 直接进来时铺的演示会话，和 LAST 同一性质：
+     本地引擎出的，解释不是模型写的，所以标成 local-demo，别让 colophon 说谎。 */
+  syncNums(false);
+  S.reading = buildReading(2,5,2,MAXN);
+  S.reading.mode = 'local-demo';
+  renderReading();
 }
 document.addEventListener('click',e=>{
   if(e.target.closest('[data-last]')){ openLast(); return; }
