@@ -8,6 +8,8 @@
 - concern 相反：进 LLM，带 concern 块
 """
 
+import json
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -121,6 +123,97 @@ class TestCrisisRouting:
         assert body["safety_flag"] == "ok"
         assert body["mode"] == "concern"
         assert "400-161-9995" not in body["reply"]
+
+
+class _SpyProvider:
+    """记下每次生成拿到的 mode。两个方法都要有——流式路径优先走 stream_complete，
+    只有 AttributeError 才降级到 complete，只测一个会漏掉另一个。
+    """
+
+    def __init__(self) -> None:
+        self.complete_modes: list[ResponseMode | None] = []
+        self.stream_modes: list[ResponseMode | None] = []
+
+    async def complete(self, user_text, history=None, persona="nini", mode=None):
+        self.complete_modes.append(mode)
+        return "好的。"
+
+    async def stream_complete(self, user_text, history=None, persona="nini", mode=None):
+        self.stream_modes.append(mode)
+        for token in ("好", "的", "。"):
+            yield token
+
+
+class TestStreamPathGetsMode:
+    """流式那条路也必须把 mode 传下去——**前端只走流式**。
+
+    2026-08-12 线上实测踩到：`stream_complete()` 漏传 mode，导致分类照跑照计费，
+    块却一个都没生效。非流式接口是对的，所以只测 /v1/chat/demo 看不出来。
+    这几条就是为了钉住"两条路都要过"。
+    """
+
+    def _run(self, monkeypatch: pytest.MonkeyPatch, mode: ResponseMode) -> _SpyProvider:
+        spy = _SpyProvider()
+        _install(monkeypatch, _StubClassifier(mode))
+        monkeypatch.setattr(settings, "response_mode_enabled", True)
+        monkeypatch.setattr(
+            "app.api.v1.chat.get_llm_provider", lambda: (spy, False)
+        )
+        resp = client.post(
+            "/v1/chat/demo/stream", json={"user_text": "今天被我妈说了一顿"}
+        )
+        assert resp.status_code == 200, resp.text
+        self.body = resp.text
+        return spy
+
+    def test_stream_complete_receives_mode(self, monkeypatch: pytest.MonkeyPatch):
+        spy = self._run(monkeypatch, ResponseMode.VENT)
+        assert spy.stream_modes == [ResponseMode.VENT]
+
+    def test_stream_done_event_carries_mode_and_care(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        """前端拿不到 care 就永远显示不了现实求助入口——文档 8.5.2 的底线在这里断掉。"""
+        self._run(monkeypatch, ResponseMode.CONCERN)
+        done = [
+            json.loads(line[6:])
+            for line in self.body.splitlines()
+            if line.startswith("data: ") and '"type": "done"' in line
+        ]
+        assert len(done) == 1
+        assert done[0]["mode"] == "concern"
+        # concern → S2 → 安静地摆着，不打断
+        assert done[0]["care"]["level"] == "quiet"
+        assert done[0]["care"]["hotlines"]
+
+    def test_stream_degraded_fallback_also_receives_mode(
+        self, monkeypatch: pytest.MonkeyPatch
+    ):
+        """provider 不支持流式时降级到 complete()，那条路同样不能把 mode 丢了。
+
+        这个 spy **必须真的没有 stream_complete 这个属性**（像 MockProvider 那样），
+        不能用 `del spy.stream_complete`（方法在类上，实例删不掉）也不能置成 None
+        （调用 None 抛的是 TypeError，而服务层只接 AttributeError，降级根本不会触发）。
+        """
+
+        class _NoStreamSpy:
+            def __init__(self) -> None:
+                self.complete_modes: list[ResponseMode | None] = []
+
+            async def complete(
+                self, user_text, history=None, persona="nini", mode=None
+            ):
+                self.complete_modes.append(mode)
+                return "好的。"
+
+        spy = _NoStreamSpy()
+        _install(monkeypatch, _StubClassifier(ResponseMode.ADVICE))
+        monkeypatch.setattr(settings, "response_mode_enabled", True)
+        monkeypatch.setattr("app.api.v1.chat.get_llm_provider", lambda: (spy, False))
+
+        resp = client.post("/v1/chat/demo/stream", json={"user_text": "我该怎么办"})
+        assert resp.status_code == 200, resp.text
+        assert spy.complete_modes == [ResponseMode.ADVICE]
 
 
 class TestPromptComposition:

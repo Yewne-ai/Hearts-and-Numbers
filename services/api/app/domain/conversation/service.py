@@ -549,6 +549,8 @@ async def stream_chat_demo(
                     if conversation_id
                     else None,
                     "degraded": False,
+                    "mode": mode.value if mode else "",
+                    "care": _care_for(mode, safety.reason, locked).model_dump(),
                 }
             )
             + "\n\n"
@@ -571,6 +573,7 @@ async def stream_chat_demo(
             user_text=request.user_text,
             history=history,
             persona=request.persona.value,
+            mode=mode,
         )
         async for sentence in _iter_sentences(token_stream):
             full_reply += sentence
@@ -606,6 +609,7 @@ async def stream_chat_demo(
                 user_text=request.user_text,
                 history=history,
                 persona=request.persona.value,
+                mode=mode,
             )
         except LLMError:
             full_reply = await MockProvider().complete(
@@ -649,7 +653,7 @@ async def stream_chat_demo(
         request_id=request_id,
         is_mock=response_is_mock,
         degraded=degraded,
-            mode=mode,
+        mode=mode,
     )
     yield (
         "data: "
@@ -663,6 +667,8 @@ async def stream_chat_demo(
                 "conversation_id": str(conversation_id) if conversation_id else None,
                 "degraded": degraded,
                 "emotion": emotion,
+                "mode": mode.value if mode else "",
+                "care": _care_for(mode, "ok", locked).model_dump(),
             }
         )
         + "\n\n"
