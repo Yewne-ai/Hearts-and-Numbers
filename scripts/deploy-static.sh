@@ -124,15 +124,18 @@ if [ "$AUTH" -eq 1 ]; then
 fi
 
 # location 块写成一对:
-#   `= /名字`  让不带斜杠的地址也能开(否则用户输 /pitch 会 404)
+#   `= /名字`  不带斜杠的地址 **301 跳到带斜杠版本**
 #   `/名字/`   服务目录本身
-# 和现有的 /npr-demo、/demo 是同一个写法,保持一致。
+#
+# ⚠️ 这里原来是直接 `try_files /名字/index.html`,把首页当场吐出来。看着能开,
+#    但浏览器认为当前地址是 `/名字`(没有斜杠),于是相对路径的基准变成了 `/`——
+#    页面里的 `./app.js` 会被解析成 `/app.js` 而不是 `/名字/app.js`,404。
+#    对 ES module 尤其致命:模块加载失败 = 整个页面一个事件都绑不上,点什么都没反应,
+#    而 HTML/CSS 照常渲染,看起来完全正常。排查起来非常费劲(2026-08-16 踩过)。
+#    改成 301 之后,浏览器地址栏真的变成 `/名字/`,相对路径就对了。
 BLOCK="    # ── $NAME (deploy-static.sh 生成,勿手改) ──
     location = /$NAME {
-${AUTH_LINES}        root /var/www;
-        default_type text/html;
-        add_header Cache-Control \"no-cache\";
-        try_files /$NAME/index.html =404;
+        return 301 /$NAME/;
     }
     location /$NAME/ {
 ${AUTH_LINES}        alias /var/www/$NAME/;
@@ -188,10 +191,29 @@ step "验证"
 # 开了 auth 就该被拦下来。这里断言 401 而不是 200——如果保护没生效反而返回 200,
 # 那是把未发布的东西公开了,必须当成失败。
 EXPECT=200; [ "$AUTH" -eq 1 ] && EXPECT=401
-for url in "$DOMAIN/$NAME" "$DOMAIN/$NAME/"; do
-  code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
-  [ "$code" = "$EXPECT" ] && ok "$url → $code" || die "$url → $code（预期 $EXPECT）"
-done
+
+# 不带斜杠的地址现在是 301,要跟随跳转再看落地状态(-L)。
+code=$(curl -sL -o /dev/null -w '%{http_code}' "$DOMAIN/$NAME")
+hop=$(curl -s  -o /dev/null -w '%{http_code}' "$DOMAIN/$NAME")
+[ "$hop" = "301" ] || die "$DOMAIN/$NAME → $hop（预期 301 跳到带斜杠版本）"
+[ "$code" = "$EXPECT" ] && ok "$DOMAIN/$NAME → 301 → $code" || die "$DOMAIN/$NAME 跳转后 → $code（预期 $EXPECT）"
+
+code=$(curl -s -o /dev/null -w '%{http_code}' "$DOMAIN/$NAME/")
+[ "$code" = "$EXPECT" ] && ok "$DOMAIN/$NAME/ → $code" || die "$DOMAIN/$NAME/ → $code（预期 $EXPECT）"
+
+# 相对路径实测:页面里第一个 ./ 或 ../ 引用的资源必须真的能取到。
+# 只看首页 200 是不够的——首页照常渲染、模块 404、页面死掉,三件事可以同时发生。
+if [ "$AUTH" -eq 0 ]; then
+  asset=$(curl -s "$DOMAIN/$NAME/" \
+    | grep -oE '(src|href)="\./[^"]+"|from '"'"'\./[^'"'"']+'"'"'' \
+    | head -1 | grep -oE '\./[^"'"'"']+' | sed 's|^\./||')
+  if [ -n "$asset" ]; then
+    acode=$(curl -s -o /dev/null -w '%{http_code}' "$DOMAIN/$NAME/$asset")
+    [ "$acode" = "200" ] && ok "相对资源 $asset → $acode" \
+      || die "相对资源 $DOMAIN/$NAME/$asset → $acode。页面能开但资源取不到,JS 会整个失效"
+  fi
+fi
+
 if [ "$AUTH" -eq 1 ]; then
   ok "密码保护生效（未带凭据返回 401）"
 fi
