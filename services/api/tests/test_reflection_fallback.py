@@ -77,7 +77,7 @@ def test_fixed_reading_preserves_calculation_and_transition_grounding() -> None:
 
 
 def test_fixed_reading_contains_no_corpus_forbidden_claims() -> None:
-    calculation = calculate_three_numbers(99, 0, 42)
+    calculation = calculate_three_numbers(99, 6, 42)
 
     for scene in Scene:
         reading = build_fixed_reading(calculation, scene)
