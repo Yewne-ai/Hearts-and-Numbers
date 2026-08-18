@@ -10,6 +10,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.domain.conversation.modes import ChatMode
 from app.domain.safety import SafetyReason
 from app.domain.safety.care import CareAffordance
 
@@ -77,6 +78,25 @@ class ChatDemoRequest(BaseModel):
         max_length=200,
         description="当前浏览器会话的对话历史，不含本轮 user_text（最多 200 条）",
     )
+    # [2026-08-18] 深聊页四个模式（文档 4.4）此前没有入口——ChatMode 枚举、
+    # CHAT_MODE_BLOCKS、compose_system_prompt 的 chat_mode 参数都写好了，
+    # 唯独请求体收不到，用户点了等于没点。
+    #
+    # 逐轮传而不是记在会话上：文档 4.4 允许用户中途换模式，"这一轮想被听见、
+    # 下一轮想要办法"是常态。记在会话里反而要多一个切换接口。
+    chat_mode: ChatMode | None = Field(
+        default=None,
+        description=(
+            "用户在深聊页选的模式（listen/clarify/reframe/act）。"
+            "给了就完全按它走，不看推断结果；不给才用自动判定的 ResponseMode。"
+        ),
+    )
+
+    @field_validator("chat_mode", mode="before")
+    @classmethod
+    def _empty_chat_mode_is_none(cls, v: object) -> object:
+        """空串当作未选。前端「取消选择」传空串比传 null 省事，别让它吃 422。"""
+        return None if v == "" else v
 
     @field_validator("scene", mode="before")
     @classmethod

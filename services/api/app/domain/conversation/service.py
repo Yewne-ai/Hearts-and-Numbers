@@ -402,6 +402,7 @@ async def handle_chat_demo(
                 history=history,
                 persona=request.persona.value,
                 mode=mode,
+                chat_mode=request.chat_mode,
             ),
             _detect_emotion_safe(request.user_text, provider),
         )
@@ -627,6 +628,7 @@ async def stream_chat_demo(
             history=history,
             persona=request.persona.value,
             mode=mode,
+            chat_mode=request.chat_mode,
         )
         async for sentence in _append_deletion_note(
             _iter_sentences(token_stream), owes_note
@@ -665,6 +667,7 @@ async def stream_chat_demo(
                 history=history,
                 persona=request.persona.value,
                 mode=mode,
+                chat_mode=request.chat_mode,
             )
         except LLMError:
             full_reply = await MockProvider().complete(

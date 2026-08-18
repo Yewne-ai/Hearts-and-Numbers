@@ -14,7 +14,7 @@
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:  # 避免 provider 反向依赖 classifier_v2 造成循环导入
-    from app.domain.conversation.modes import ResponseMode
+    from app.domain.conversation.modes import ChatMode, ResponseMode
 
 
 class LLMError(RuntimeError):
@@ -43,6 +43,7 @@ class LLMProvider(Protocol):
         history: list[dict] | None = None,
         persona: str = "nini",
         mode: "ResponseMode | None" = None,
+        chat_mode: "ChatMode | None" = None,
     ) -> str: ...
 
 
@@ -60,6 +61,7 @@ class MockProvider:
         history: list[dict] | None = None,
         persona: str = "nini",
         mode: "ResponseMode | None" = None,
+        chat_mode: "ChatMode | None" = None,
     ) -> str:
         template = self._DEFAULT_TEMPLATE
         echo = f"你说「{user_text.strip()[:40]}」，" if user_text.strip() else ""
