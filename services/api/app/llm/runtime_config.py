@@ -119,3 +119,12 @@ def reset_overrides() -> dict:
             except OSError:
                 pass
     return get_config(force=True)
+
+
+# [2026-08-11] 单一人格。客户端传什么都用 yewne——保留旧值只是为了不让老客户端
+# 吃 422，不是还支持多人格。任何需要"按人格取东西"的地方都该先过这个函数，
+# 否则会静默退回到某个旧人格（TTS 音色、Aftercare 文案都有 .get 兜底，
+# 拿不到 yewne 就悄悄用妮妮那套，界面上看不出来）。
+def resolve_persona(persona: str | None) -> str:
+    """把客户端传来的人格值解析成实际使用的那个。"""
+    return "yewne"

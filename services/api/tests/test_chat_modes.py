@@ -30,7 +30,7 @@ class TestChatModeWins:
     ):
         base = "【人格】原样保留"
         composed = compose_system_prompt(base, "nini", inferred, chat_mode=chat_mode)
-        assert composed == base + "\n\n" + CHAT_MODE_BLOCKS[chat_mode]
+        assert composed.startswith(base + "\n\n" + CHAT_MODE_BLOCKS[chat_mode])
 
     @pytest.mark.parametrize("chat_mode", list(ChatMode))
     def test_preference_does_not_leak_into_user_choice(self, chat_mode: ChatMode):

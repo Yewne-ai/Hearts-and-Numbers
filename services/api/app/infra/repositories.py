@@ -75,6 +75,20 @@ class ConversationRepository:
         await self._session.flush()
         return conversation
 
+    async def take_deletion_hint(self, conversation: Conversation) -> bool:
+        """这个会话欠不欠一句"可以删"。**读到就清掉**——读和清是一个操作，
+        分开写迟早会出现读了没清、于是每轮都提的情况。
+        """
+        owed = conversation.owes_deletion_hint
+        if owed:
+            conversation.owes_deletion_hint = False
+            await self._session.flush()
+        return owed
+
+    async def mark_deletion_hint_owed(self, conversation: Conversation) -> None:
+        conversation.owes_deletion_hint = True
+        await self._session.flush()
+
     async def mark_safety_locked(
         self, conversation: Conversation, risk_level: str
     ) -> None:

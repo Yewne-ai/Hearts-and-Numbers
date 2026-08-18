@@ -49,8 +49,8 @@ async def test_deepseek_complete_returns_content_on_200():
         assert roles == ["system", "user"]
         # 用户文本未被 scene 字符串污染
         assert body["messages"][1]["content"] == "睡不着"
-        # system prompt 按默认 persona 选择：未传 persona 时应使用妮妮(nini)
-        assert "你是妮妮" in body["messages"][0]["content"]
+        # [2026-08-11] 单一人格：传什么都用 yewne，不传也是。
+        assert "你叫于你" in body["messages"][0]["content"]
 
 
 @pytest.mark.asyncio

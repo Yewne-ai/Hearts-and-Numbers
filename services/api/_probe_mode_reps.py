@@ -31,7 +31,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from _probe_personas import load_live_personas  # noqa: E402
+from _probe_personas import persona_for  # noqa: E402
 
 from app.core.config import settings  # noqa: E402
 from app.llm import runtime_config  # noqa: E402
@@ -97,7 +97,6 @@ async def ask(client: httpx.AsyncClient, system: str, text: str, temp: float) ->
 
 
 async def main() -> None:
-    live = load_live_personas()
     temp = runtime_config.get_params()["temperature"]
     sem = asyncio.Semaphore(CONCURRENCY)
     cases = [(t, "vent") for t in VENT] + [(t, "unclear") for t in UNCLEAR]
@@ -110,7 +109,7 @@ async def main() -> None:
 
     async with httpx.AsyncClient(timeout=settings.llm_timeout_seconds) as client:
         for persona in ("nini", "youyou"):
-            base = live[persona]
+            base = persona_for(persona)
             report[persona] = {"A": [], "B": []}
 
             for rep in range(REPS):

@@ -81,6 +81,12 @@ class Conversation(Base):
     risk_level: Mapped[str] = mapped_column(
         String(2), nullable=False, default="S0", server_default="S0"
     )
+    # 用户上一轮要求过保密。下一轮回复末尾要提一句"可以删"，提完就清掉——
+    # 只提一次，重复提是唠叨，而且会让人觉得我们在推卸。
+    # 见 domain/safety/privacy.py。
+    owes_deletion_hint: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
+    )
     # 锁上之后这个会话不再进 LLM，每轮都回固定文案 + 现实求助入口。
     # **不自动解锁**：文档 8.6 里 Safety 是终态。用户想继续聊可以开新会话，
     # 但不该由模型判断"他现在好些了"来解除——那正是最不该让模型决定的事。

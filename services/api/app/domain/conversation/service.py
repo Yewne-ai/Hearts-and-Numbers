@@ -35,6 +35,7 @@ from app.core.config import settings
 from app.domain.safety import SafetyReason
 from app.domain.safety.provider import SafetyProvider
 from app.domain.safety.care import CareAffordance, affordance_for
+from app.domain.safety.privacy import DELETION_NOTE
 from app.domain.safety.rules import SafetyResult, fallback_text_for
 from app.domain.conversation.modes import ResponseMode, risk_level_for
 from app.llm.factory import get_response_mode_classifier
@@ -243,6 +244,48 @@ def _care_for(
     )
 
 
+def _with_deletion_note(reply: str, owed: bool) -> str:
+    """把"可以删"接在回复后面。另起一行——实测模型自己提这句时也是这么放的。"""
+    return f"{reply}\n\n{DELETION_NOTE}" if owed else reply
+
+
+async def _append_deletion_note(sentences, owed: bool):
+    """模型说完之后，把"可以删"作为最后一句补进流里。
+
+    补成流里的一句而不是事后拼字符串：这样它照样过分句、过 TTS、
+    带自己的 index 发给前端，前端不用为这一句写特例。
+    """
+    async for sentence in sentences:
+        yield sentence
+    if owed:
+        yield DELETION_NOTE
+
+
+async def _owes_deletion_hint(
+    persistence: ConversationPersistence | None,
+    request: ChatDemoRequest,
+    request_id: str,
+) -> bool:
+    """他上一轮要求过保密吗——要的话这一轮末尾补一句"可以删"。
+
+    读失败或没开持久化都返回 False：提不提这一句不值得让请求失败，
+    而且没有会话状态时本来就跨不了轮。
+    """
+    if persistence is None or not request.external_user_id:
+        return False
+    try:
+        owed = await persistence.take_deletion_hint(
+            external_user_id=request.external_user_id,
+            conversation_id=request.conversation_id,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("deletion_hint_check_failed", request_id=request_id, error=str(exc))
+        return False
+    if owed:
+        logger.info("chat_deletion_hint_due", request_id=request_id)
+    return owed
+
+
 async def _classify_mode_safe(user_text: str, request_id: str) -> ResponseMode | None:
     """判这一轮的回应模式。开关关闭、或分类出任何问题，一律返回 None。
 
@@ -347,6 +390,9 @@ async def handle_chat_demo(
             audio_is_mock=audio_mock,
         )
 
+    # 他上一轮要求过保密的话，这一轮末尾补一句"可以删"。取到就清，只提一次。
+    owes_note = await _owes_deletion_hint(persistence, request, request_id)
+
     history = _build_history(request.history)
 
     try:
@@ -359,6 +405,7 @@ async def handle_chat_demo(
             ),
             _detect_emotion_safe(request.user_text, provider),
         )
+        reply = _with_deletion_note(reply, owes_note)
         logger.info(
             "chat_demo_ok",
             request_id=request_id,
@@ -418,6 +465,9 @@ async def handle_chat_demo(
             history=history,
             persona=request.persona.value,
         )
+        # 降级了也照样补——标记已经取走清掉了，这里不补就永远丢了，
+        # 而这句讲的是他的数据，跟这轮回复成没成功无关。
+        mock_reply = _with_deletion_note(mock_reply, owes_note)
         audio_b64, audio_ct, audio_mock = ("", "audio/mpeg", True)
         if tts_provider:
             audio_b64, audio_ct, audio_mock = await _synthesize_audio(
@@ -555,6 +605,9 @@ async def stream_chat_demo(
         )
         return
 
+    # 他上一轮要求过保密的话，这一轮末尾补一句"可以删"。取到就清，只提一次。
+    owes_note = await _owes_deletion_hint(persistence, request, request_id)
+
     history = _build_history(request.history)
 
     emotion_task = asyncio.create_task(
@@ -572,7 +625,9 @@ async def stream_chat_demo(
             history=history,
             persona=request.persona.value,
         )
-        async for sentence in _iter_sentences(token_stream):
+        async for sentence in _append_deletion_note(
+            _iter_sentences(token_stream), owes_note
+        ):
             full_reply += sentence
             audio_b64, audio_ct, audio_mock = ("", "audio/mpeg", True)
             if tts_provider:

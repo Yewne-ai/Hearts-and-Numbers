@@ -11,6 +11,7 @@
 import pytest
 
 from app.domain.conversation.modes import ResponseMode
+from app.domain.conversation.modes import ChatMode
 from app.llm.classifier_v2 import MockResponseModeClassifier
 from app.llm.mode_blocks import (
     BLOCKS,
@@ -19,7 +20,7 @@ from app.llm.mode_blocks import (
     compose_system_prompt,
 )
 
-PERSONAS = ("nini", "youyou")
+PERSONAS = ("yewne",)
 
 
 def test_every_mode_has_a_block():
@@ -33,13 +34,13 @@ def test_block_for_never_raises(persona: str, mode: ResponseMode):
     assert block_for(persona, mode).strip()
 
 
-def test_persona_override_wins():
-    """优优的 advice 单独一版：通用版那句"说出你倾向哪个"会让它直接替用户拍板。"""
-    generic = BLOCKS[ResponseMode.ADVICE]
-    youyou = block_for("youyou", ResponseMode.ADVICE)
-    assert youyou != generic
-    assert "别替他拍板" in youyou
-    assert "说出你倾向哪个" not in youyou
+def test_override_table_is_empty_after_persona_merge():
+    """[2026-08-11] 合并成单一人格后覆盖表空了。机制保留，见 mode_blocks 里的说明。
+
+    这条不是为了锁死"必须为空"——再加人格时删掉它即可。留着是为了让
+    下一个人知道空是有意的，不是漏写。
+    """
+    assert PERSONA_OVERRIDES == {}
 
 
 def test_persona_without_override_falls_back_to_generic():
@@ -58,11 +59,15 @@ def test_override_keys_reference_real_personas_and_modes():
 @pytest.mark.parametrize("persona", PERSONAS)
 @pytest.mark.parametrize("mode", list(ResponseMode))
 def test_compose_keeps_persona_intact(persona: str, mode: ResponseMode):
-    """块是追加，不是替换——人格 prompt 必须原样在前面。"""
+    """块是追加，不是替换——人格 prompt 必须原样在最前面。
+
+    末尾不再是 mode 块本身：边界约束（文档 6.1 那五条禁语）拼在最后，
+    见 mode_blocks.compose_system_prompt。
+    """
     base = "【人格】这是妮妮的原始设定，一个字都不能少。"
     composed = compose_system_prompt(base, persona, mode)
     assert composed.startswith(base)
-    assert composed.endswith(block_for(persona, mode))
+    assert block_for(persona, mode) in composed
     assert "\n\n" in composed[len(base) : len(base) + 2]
 
 
@@ -118,3 +123,37 @@ class TestMockClassifier:
     async def test_empty_input_never_raises(self):
         clf = MockResponseModeClassifier()
         assert await clf.classify("") is ResponseMode.UNCLEAR
+
+
+class TestBoundaryGuard:
+    """产品文档 6.1「不允许的角色话术」——五条禁语，配合 4.5 第 6 条
+    「不以依赖作为留存」。
+
+    实测线上两个人格都没写这个：优优只有"不谈恋爱"，妮妮一条都没有。
+    而人格在后台改，代码里够不着——所以约束放在这里，每一轮都拼上。
+    """
+
+    _FORBIDDEN = ["永远在", "只有你才懂", "别告诉别人", "会难过", "继续订阅"]
+
+    @pytest.mark.parametrize("persona", PERSONAS)
+    @pytest.mark.parametrize("mode", list(ResponseMode))
+    def test_inferred_mode_always_carries_the_guard(
+        self, persona: str, mode: ResponseMode
+    ):
+        out = compose_system_prompt("P", persona, mode)
+        for phrase in self._FORBIDDEN:
+            assert phrase in out, f"{persona}/{mode.value} 少了边界约束: {phrase}"
+
+    @pytest.mark.parametrize("chat_mode", list(ChatMode))
+    def test_user_chosen_mode_also_carries_the_guard(self, chat_mode: ChatMode):
+        """用户自己选模式时走的是另一条分支，红线不该因为走哪条路而不同——
+        而它恰恰在用户主动依赖时最要紧。
+        """
+        out = compose_system_prompt("P", "nini", ResponseMode.VENT, chat_mode=chat_mode)
+        for phrase in self._FORBIDDEN:
+            assert phrase in out, f"{chat_mode.value} 少了边界约束: {phrase}"
+
+    def test_guard_comes_last(self):
+        """边界是最外层的约束，要盖过前面所有的回应方式指导。"""
+        out = compose_system_prompt("P", "nini", ResponseMode.VENT)
+        assert out.rstrip().endswith("不需要他留下来证明什么。")

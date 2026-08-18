@@ -37,7 +37,7 @@ load_dotenv()
 from app.core.config import settings  # noqa: E402
 from app.llm.classifier_v2 import ResponseMode  # noqa: E402
 from app.llm import runtime_config  # noqa: E402
-from _probe_personas import load_live_personas  # noqa: E402
+from _probe_personas import persona_for  # noqa: E402
 from app.llm.mode_blocks import compose_system_prompt  # noqa: E402
 
 PERSONA = os.getenv("PERSONA", "nini")
@@ -126,7 +126,7 @@ async def ask(client: httpx.AsyncClient, system: str, user_text: str) -> str:
 
 
 async def main() -> None:
-    base = load_live_personas()[PERSONA] if USE_LIVE else runtime_config.get_persona(PERSONA)
+    base = persona_for(PERSONA) if USE_LIVE else runtime_config.get_persona(PERSONA)
     sem = asyncio.Semaphore(CONCURRENCY)
 
     async with httpx.AsyncClient(timeout=settings.llm_timeout_seconds) as client:
