@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.conversation.modes import RISK_CLASSIFIER_VERSION
 from app.domain.safety import SafetyReason
+from app.domain.safety.privacy import asks_for_secrecy
 from app.infra.repositories import (
     ConversationRepository,
     MessageRepository,
@@ -67,6 +68,11 @@ class PostgresConversationPersistence:
             else:
                 conversation.persona = persona
 
+            # 他这轮要求了保密 → 记下来，下一轮说完再提"可以删"。
+            # 放在会话拿到之后：首轮时会话是上面才创建的。
+            if asks_for_secrecy(user_text):
+                await self._conversations.mark_deletion_hint_owed(conversation)
+
             await self._messages.create(
                 conversation_id=conversation.id,
                 role="user",
@@ -90,6 +96,31 @@ class PostgresConversationPersistence:
         except Exception:
             await self._session.rollback()
             raise
+
+    async def take_deletion_hint(
+        self, *, external_user_id: str, conversation_id: UUID | None
+    ) -> bool:
+        """取并清掉"欠一句可以删"的标记。读失败返回 False——
+        提不提这一句不值得让请求失败，下一轮还有机会。
+        """
+        if conversation_id is None:
+            return False
+        try:
+            user = await self._users.get_by_external_id(external_user_id)
+            if user is None:
+                return False
+            conversation = await self._conversations.get_for_user(
+                conversation_id, user.id
+            )
+            if conversation is None:
+                return False
+            owed = await self._conversations.take_deletion_hint(conversation)
+            if owed:
+                await self._session.commit()
+            return owed
+        except SQLAlchemyError as exc:
+            logger.warning("deletion_hint_read_failed", error=str(exc))
+            return False
 
     async def is_safety_locked(
         self, *, external_user_id: str, conversation_id: UUID | None

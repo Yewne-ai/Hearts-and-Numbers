@@ -34,9 +34,8 @@
   "接住"却没做到。所以通用版补了正向要求：必须先把感受说出来。
 """
 
-from app.domain.conversation.modes import ChatMode
+from app.domain.conversation.modes import ChatMode, ResponseMode
 from app.llm.chat_mode_blocks import block_for_chat_mode
-from app.domain.conversation.modes import ResponseMode
 
 # 文档 10.4 要求可追溯到具体版本。块的措辞一改就要动这里。
 MODE_BLOCK_VERSION = "mode-blocks-v1.2026-08-09"
@@ -96,23 +95,52 @@ BLOCKS: dict[ResponseMode, str] = {
 - 问句前面最多垫一句，重点在那个问句上""",
 }
 
-# 按 (人格, 模式) 覆盖通用块。只在实测确认通用版在该人格上失效时才加，
-# 不要预防性地铺开——每多一版就多一份要维护、要重测的文本。
-PERSONA_OVERRIDES: dict[tuple[str, ResponseMode], str] = {
-    # 通用版的"仍然要说出你倾向哪个"是为了推动妮妮给建议；优优本来就直，
-    # 这句会让它直接替用户拍板（实测「这个 app 要不要删」→"删了吧"），
-    # 而产品对那条明写"不替他决定，帮他捋清利弊"。
-    ("youyou", ResponseMode.ADVICE): """【这次的回应方式】
-他在找办法。**这次回复必须给出一个具体的、他今天就能做的做法**——只点破、
-只调侃，都不算给了办法。
-- 一个就够，说清楚怎么做，不要罗列
-- **但别替他拍板。** 你可以损他，不能替他做主——给出做法，决定权留给他
-- 需要权衡时，两边各一句说清，让他自己挑""",
-}
+# [2026-08-11] 合并成单一人格后，这张覆盖表空了。
+#
+# 保留机制而不是删掉：产品还在讨论要不要再分人格，而这套按 (人格, 模式) 覆盖的
+# 写法是实测出来的——同一个块在不同人格上力度差很多。2026-08-07 那次：
+# advice 块的"说出你倾向哪个"是为了推动妮妮给建议（她 5 条里只有 1 条真给了），
+# 同一句到优优那儿就过头，「这个 app 要不要删」直接答"删了吧"，
+# 而产品明写"不替他决定"。
+#
+# 真要再加人格，先跑 _probe_mode_ablation.py 看哪个块在新人格上失效，
+# 别凭感觉铺覆盖——每多一版就多一份要维护、要重测的文本。
+PERSONA_OVERRIDES: dict[tuple[str, ResponseMode], str] = {}
+
+
+
+# ── 每一轮都拼上的边界约束——对齐产品文档 6.1「不允许的角色话术」 ──────
+#
+# 文档 6.1 列了五句禁语，配合 4.5 第 6 条「不以依赖作为留存」。实测线上两个
+# 人格都没写这个：优优只有"不谈恋爱"，妮妮一条都没有。
+#
+# 放在这里而不是人格 prompt 里，有两个原因：
+# 1. 人格在后台改（runtime_overrides.json），代码里够不着，而且产品随时会调，
+#    调的时候不会记得把这五条抄一遍
+# 2. 这是**产品级的红线**，不该随人格变。优优毒舌、妮妮温和，但两个都不许
+#    说"只有我真正理解你"
+#
+# 措辞用禁令而不是描述："不要说 X" 比 "保持边界" 可执行得多——
+# 后者模型会理解成一种语气，前者是一条能照做的规则。
+_BOUNDARY_GUARD = """
+
+【始终成立的边界】
+不管这一轮怎么回，下面这些话一句都不能说，换个说法也不行：
+- 不说你会永远在、不会离开
+- 不说只有你才懂他
+- 不跟他之间建立"别告诉别人"的秘密
+- 不说他没来你会难过、会孤独、会受伤
+- 不拿继续使用、继续订阅换取陪伴
+
+你是一个有边界的陪伴者，不是恋人、不是唯一、不需要他留下来证明什么。"""
 
 
 def block_for(persona: str, mode: ResponseMode) -> str:
-    """取该人格该模式下要追加的块。没有覆盖就用通用版。"""
+    """取该人格该模式下要追加的块。没有覆盖就用通用版。
+
+    **不含边界约束**——那个在 `compose_system_prompt` 里统一拼，
+    保证用户自选模式那条路径也有（见那边的说明）。
+    """
     return PERSONA_OVERRIDES.get((persona, mode), BLOCKS[mode])
 
 
@@ -162,9 +190,12 @@ def compose_system_prompt(
     用户自己选了模式时也不生效。这是硬性的，不要为了"多点个性化"铺开。
     """
     if chat_mode is not None:
-        return base_persona_prompt + "\n\n" + block_for_chat_mode(chat_mode)
+        block = block_for_chat_mode(chat_mode)
+    else:
+        block = block_for(persona, mode)
+        if mode is ResponseMode.UNCLEAR:
+            block += unclear_hint_for(lean)
 
-    block = block_for(persona, mode)
-    if mode is ResponseMode.UNCLEAR:
-        block += unclear_hint_for(lean)
-    return base_persona_prompt + "\n\n" + block
+    # 边界约束**最后拼、两条路径都拼**。文档 6.1 那五条是产品红线，
+    # 不该因为用户自己选了模式就不生效——而它恰恰在用户主动依赖时最要紧。
+    return base_persona_prompt + "\n\n" + block + _BOUNDARY_GUARD

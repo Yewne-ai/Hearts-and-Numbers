@@ -32,9 +32,24 @@ def _reset_cache():
 # ── 出厂默认 ────────────────────────────────────────────────────────────
 
 
-def test_default_personas_are_the_two_live_characters() -> None:
-    """合法 persona 只有优优和妮妮；改名前的 momo/iris/rocky 早已作废。"""
-    assert set(PERSONA_KEYS) == {"youyou", "nini"}
+def test_yewne_is_the_live_persona() -> None:
+    """[2026-08-11] 合并成单一人格 yewne。
+
+    youyou / nini 仍在 PERSONA_KEYS 里，**只为不让老客户端吃 422**，
+    而且老会话重放 Aftercare 时还要用到——不是还支持多人格。
+    真正生效的只有 yewne，见 runtime_config.resolve_persona。
+    """
+    assert "yewne" in PERSONA_KEYS
+    assert set(PERSONA_KEYS) == {"yewne", "youyou", "nini"}
+
+
+def test_every_persona_value_resolves_to_yewne() -> None:
+    """客户端传什么都用 yewne。漏掉解析的地方会静默退回旧人格
+    （TTS 音色、Aftercare 文案都有 .get 兜底），界面上看不出来。"""
+    from app.llm.runtime_config import resolve_persona
+
+    for value in ("nini", "youyou", "yewne", "", None):
+        assert resolve_persona(value) == "yewne"
 
 
 def test_default_personas_are_non_empty() -> None:
@@ -131,4 +146,4 @@ def test_admin_accepts_correct_token(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
     assert response.status_code == 200
-    assert set(response.json()["personas"]) == {"youyou", "nini"}
+    assert set(response.json()["personas"]) == {"yewne", "youyou", "nini"}

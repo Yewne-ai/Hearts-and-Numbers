@@ -15,10 +15,14 @@ play 对应动画，不用自己从情绪去映射。
 
 import httpx
 
+from app.llm.runtime_config import resolve_persona
 from app.core.config import settings
 
 # 每个人格实际做了动画的反应集合（据美术给的动画表）。
 _REACTION_SETS: dict[str, tuple[str, ...]] = {
+    # [2026-08-11] 单一人格。取两个旧人格的并集——合并之后没有理由再砍掉
+    # 任何一种反应，而且少给一种就等于用户表达不了那种感受。
+    "yewne": ("开心", "伤心", "疑惑", "关心", "肯定", "否定"),
     "youyou": ("开心", "伤心", "疑惑", "肯定", "否定"),   # 优优没有"关心"
     "nini": ("开心", "伤心", "疑惑", "关心"),             # 妮妮没有"肯定/否定"
 }
@@ -36,7 +40,7 @@ _MEANINGS: dict[str, str] = {
 
 async def detect_reaction(reply: str, persona: str) -> str:
     """据于你这句回答，从该人格可用的反应里选一个。失败/无适用则返回 ""。"""
-    allowed = _REACTION_SETS.get(persona)
+    allowed = _REACTION_SETS.get(resolve_persona(persona))
     if not allowed or not reply.strip() or not settings.deepseek_api_key:
         return ""
 

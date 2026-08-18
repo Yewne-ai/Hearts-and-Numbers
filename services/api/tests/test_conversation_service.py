@@ -46,8 +46,14 @@ class _FakePersistence:
 
     conversation_id = UUID("00000000-0000-0000-0000-000000000123")
 
-    def __init__(self) -> None:
+    def __init__(self, owes_hint: bool = False) -> None:
         self.calls: list[dict[str, object]] = []
+        self.owes_hint = owes_hint
+
+    async def take_deletion_hint(self, *, external_user_id, conversation_id) -> bool:
+        # 真实现读到就清；这里也清，免得测"只提一次"时假货比真货宽松。
+        owed, self.owes_hint = self.owes_hint, False
+        return owed
 
     async def save_exchange(
         self,

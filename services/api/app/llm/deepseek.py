@@ -29,7 +29,8 @@ from app.llm.mode_blocks import compose_system_prompt
 
 
 def _system_prompt_for(persona: str) -> str:
-    return runtime_config.get_persona(persona)
+    # 客户端传什么都用 yewne——见 runtime_config.resolve_persona 的说明。
+    return runtime_config.get_persona(runtime_config.resolve_persona(persona))
 
 
 def _system_prompt_with_mode(persona: str, mode: "ResponseMode | None") -> str:

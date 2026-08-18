@@ -33,6 +33,16 @@ _DEFAULT_RATE = -8  # range [-50, 100]
 # 试音样本(桌面 优优妮妮高级音色试听0803/)就是按 rate=0 / pitch=0 / 无停顿生成的,
 # 产品据此定档,所以线上必须保持同样的参数组合。
 _PERSONA_VOICE_OVERRIDES: dict[str, dict[str, object]] = {
+    # [2026-08-11] 合并成单一人格后的音色。先沿用妮妮那档（活泼刁蛮）——
+    # 它是产品 08-03 试听定过的，而 yewne 的定位"温暖但不甜腻"更接近妮妮
+    # 而不是优优的假小子。**这是暂定值，产品重新试听后可能要换。**
+    "yewne": {
+        "speaker": "ICL_uranus_zh_female_huopodiaoman_tob",
+        "resource_id": "seed-tts-2.0",
+        "speech_rate": 0,
+        "pitch": 0.0,
+        "natural_pauses": False,
+    },
     # youyou（优优）= 高洞察力·有点毒嘴的老朋友 → 假小子（中性偏飒,配毒舌人设）
     # 历史:少年梓辛(男)→ 京腔侃爷(男,只上线一天)→ 邻家女孩(seed-tts-1.0,rate+6)→ 假小子
     "youyou": {

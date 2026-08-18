@@ -39,6 +39,34 @@ def load_live_personas() -> dict[str, str]:
     return out
 
 
+def snapshot_date() -> str:
+    """快照头一行的导出时间，报错时带上——判断该不该重新导。"""
+    m = re.search(r"^# 线上 prompt 快照 · (\S+)", SNAPSHOT.read_text(encoding="utf-8"), re.M)
+    return m.group(1) if m else "未知"
+
+
+def persona_for(key: str) -> str:
+    """取线上某个人格。**取不到就报错，不退回别的人格。**
+
+    2026-08-11 踩过：探针写成 `live.get("yewne") or next(iter(live.values()))`，
+    快照里没有 yewne（它还没进后台），于是静默拿了优优去跑，
+    回复里蹦出"连妮妮都撬不开"才发现——整轮测量作废。
+
+    静默退回在这里代价特别大：探针的全部意义就是"对着真人格测"，
+    退回之后它测的是另一个人格，但结果看起来完全正常。
+    """
+    live = load_live_personas()
+    if key not in live:
+        raise SystemExit(
+            f"快照里没有人格 `{key}`（有的是 {'、'.join(live)}）。\n"
+            f"快照导出于 {snapshot_date()}，{SNAPSHOT}。\n"
+            f"要么这个人格还没进后台，要么快照过期了——重新导一份再跑。\n"
+            f"想测本地默认文案的话用 runtime_config.get_persona('{key}')，"
+            f"但别把结论当成线上的。"
+        )
+    return live[key]
+
+
 if __name__ == "__main__":
     from app.llm import runtime_config
 

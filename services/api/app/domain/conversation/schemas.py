@@ -17,12 +17,16 @@ from app.domain.safety.care import CareAffordance
 class Persona(str, Enum):
     """AI 陪伴人格。
 
-    - youyou（优优）：毒舌损友，高洞察力
-    - nini（妮妮）：白斗篷小精灵，知性直接，帮用户把问题变小
+    [2026-08-11] 合并成单一人格 `yewne`。`youyou` / `nini` 保留**只为不让老客户端
+    吃 422**——线上还有在传这两个值的客户端（Unity 那个尤其），照删 scene 那次的
+    做法收下即映射。两者现在都解析成 yewne，见 `resolve_persona()`。
+
+    下次更新客户端 zip 时可以清掉，但**在那之前不要删枚举值**。
     """
 
-    YOUYOU = "youyou"
-    NINI = "nini"
+    YEWNE = "yewne"
+    YOUYOU = "youyou"  # [已废弃] 映射到 yewne
+    NINI = "nini"  # [已废弃] 映射到 yewne
 
 
 class HistoryMessage(BaseModel):

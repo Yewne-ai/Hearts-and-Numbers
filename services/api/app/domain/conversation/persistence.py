@@ -32,6 +32,15 @@ class ConversationPersistence(Protocol):
         """
         ...
 
+    async def take_deletion_hint(
+        self, *, external_user_id: str, conversation_id: UUID | None
+    ) -> bool:
+        """这个会话欠不欠一句"可以删"（用户上一轮要求过保密）。
+
+        **读到就清**——只提一次。见 domain/safety/privacy.py。
+        """
+        ...
+
     async def is_safety_locked(
         self, *, external_user_id: str, conversation_id: UUID | None
     ) -> bool:
