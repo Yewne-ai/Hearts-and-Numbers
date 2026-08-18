@@ -516,6 +516,45 @@ details.fold[open] summary::after{ content:"  －"; }
 }
 .menote{ font-size:12.5px; line-height:1.85; color:var(--ink-3); padding:2px 4px; }
 .menote b{ color:var(--ink-2); font-weight:700; }
+
+/* ---------- 登录 ---------- */
+.lginput{
+  display:block; width:100%; background:var(--white); border:0; outline:none;
+  border-radius:var(--r); padding:17px 18px; margin-bottom:10px;
+  font-family:inherit; font-size:17px; font-weight:600; color:var(--ink);
+  letter-spacing:.02em;
+}
+.lginput::placeholder{ color:var(--ink-3); font-weight:500; letter-spacing:0; }
+/* 验证码这一行：输入框 + 发送按钮并排 */
+.lgrow{ display:flex; gap:10px; align-items:stretch; margin-bottom:10px; }
+.lgrow .lginput{ flex:1; margin:0; }
+.lgsend{
+  flex:none; padding:0 18px; border:1.5px solid var(--ink-2); border-radius:var(--r);
+  background:transparent; color:var(--ink); cursor:pointer;
+  font-family:inherit; font-size:14px; font-weight:700; white-space:nowrap;
+}
+.lgsend:disabled{ color:var(--ink-3); border-color:var(--ink-3); cursor:default; }
+/* 协议勾选：整行可点，勾选框够大。默认不勾——这是后端的硬门槛，
+   也不该替用户做这个决定。 */
+.lgterms{
+  display:flex; align-items:flex-start; gap:11px; padding:14px 4px 4px;
+  cursor:pointer; user-select:none;
+}
+.lgbox{
+  flex:none; width:22px; height:22px; margin-top:1px; border-radius:7px;
+  border:2px solid var(--ink-3); background:transparent;
+  display:flex; align-items:center; justify-content:center; transition:.15s;
+}
+.lgterms[aria-checked="true"] .lgbox{ background:var(--dark); border-color:var(--dark); }
+.lgbox svg{ opacity:0; transition:opacity .15s; }
+.lgterms[aria-checked="true"] .lgbox svg{ opacity:1; }
+.lgterms .tx{ font-size:13px; line-height:1.7; color:var(--ink-2); }
+.lgterms .tx b{ color:var(--ink); font-weight:700; }
+/* 错误：后端的 code 要翻译成人话，不能把 invalid_code 直接甩给用户 */
+.lgerr{
+  font-size:13.5px; line-height:1.7; color:var(--ink); font-weight:600;
+  background:var(--bg-2); border-radius:var(--r2); padding:12px 14px; margin-bottom:10px;
+}
 /* 轻提示：浮在 tab 栏上方，不挡住它——用户刚点完开关，下一步很可能就是换页。
    bottom 给到 124px 是为了避开正文最后一行；104px 时实测压住了版本号那行。 */
 .toast{
@@ -743,6 +782,24 @@ details.fold[open] summary::after{ content:"  －"; }
       </div>
       <nav class="nav" data-nav></nav>
     </section>
+
+    <!-- ============ 登录 ============
+         只做验证码这一条路：两步（手机号 → 验证码），国内最熟悉的流程。
+         协议勾选是硬门槛，后端 agreed_to_terms=false 直接拒绝——不建用户、
+         不校验、不签 token，所以这个勾选框不能省，也不能默认勾上。 -->
+    <section class="screen" id="s-login">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="top">
+          <button class="iconbtn back" data-go="me" aria-label="返回">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+          </button>
+          <span class="brand">登录</span>
+          <span class="date"></span>
+        </div>
+        <div class="sec" id="loginBody"></div>
+      </div>
+    </section>
   </div>
 </div>
 
@@ -762,6 +819,47 @@ const S = { nums: [1,1,1], worry: '', reading: null, saved: false };
    但解释是本地固定文案，不是模型现写的，所以必须让人看得见区别。 */
 const API = '/v1/reflection/reading';
 const LOCAL_ONLY = new URLSearchParams(location.search).has('local');
+
+/* ---------- 身份 ----------
+   key 和 apps/web/lib/session 完全一致，两个前端因此共享同一份登录态：
+   在哪边登录，另一边刷新就是登录的。改 key 名之前先看那边。
+
+   external_user_id 匿名也有——它是"这台浏览器"的标识，后端拿它归属数据。
+   登录只是把它和手机号绑起来，不是从这时候才有身份。 */
+const K_TOKEN = 'yewne:auth-token';
+const K_PHONE = 'yewne:auth-phone';
+const K_UID   = 'yewne:external-user-id';
+
+const ls = {
+  get(k){ try { return localStorage.getItem(k); } catch { return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch {} },
+  del(k){ try { localStorage.removeItem(k); } catch {} },
+};
+
+/* 匿名标识：第一次进来就生成，一直用到登录。 */
+function uid(){
+  let v = ls.get(K_UID);
+  if(!v){
+    v = 'web-' + (crypto.randomUUID ? crypto.randomUUID()
+                 : Date.now().toString(36) + Math.random().toString(36).slice(2));
+    ls.set(K_UID, v);
+  }
+  return v;
+}
+const auth = {
+  get token(){ return ls.get(K_TOKEN); },
+  get phone(){ return ls.get(K_PHONE); },
+  get on(){ return !!ls.get(K_TOKEN); },
+  /* 登录成功后必须用后端返回的 external_user_id 覆盖本地：
+     这个手机号如果绑过老用户，返回的是老用户的 id，和我们发过去的不一样。
+     不覆盖的话，登录之后仍然在读匿名那份数据，跨设备就是假的。 */
+  save(token, phone, newUid){
+    ls.set(K_TOKEN, token); ls.set(K_PHONE, phone);
+    if(newUid) ls.set(K_UID, newUid);
+  },
+  clear(){ ls.del(K_TOKEN); ls.del(K_PHONE); },
+};
+const maskPhone = p => (p && p.length === 11) ? `${p.slice(0,3)}****${p.slice(7)}` : (p || '');
 
 /* 解释是怎么来的，在 colophon 里如实标注。llm 是正常情况，不加注；
    另外两种都要说明，否则页面在替模型背书它没写过的话（§8.10）。 */
@@ -808,6 +906,7 @@ async function fetchReading(nums, question, scene){
       body: JSON.stringify({
         numbers: nums,
         question: question || '（未填写）',
+        external_user_id: uid(),       // 限流身份；登录后是账号 id，匿名时是设备 id
         ...(scene ? { scene } : {}),   // 只有用户选过才带，否则让后端自己识别
       }),
     });
@@ -1193,6 +1292,9 @@ async function askChat(text, chatMode){
       body: JSON.stringify({
         user_text: text,
         history: C.history.slice(-20),        // 后端上限 200，这里够用且省 token
+        /* 后端只有拿到 external_user_id 才落库（见 chat.py 的 _get_persistence）。
+           登录之后它是账号 id，所以换台设备登录同一个号，会话是接得上的。 */
+        external_user_id: uid(),
         ...(C.id ? { conversation_id: C.id } : {}),
         ...(chatMode ? { chat_mode: chatMode } : {}),
       }),
@@ -1441,13 +1543,17 @@ function renderMe(){
   const themes   = ME.wiped ? 0 : themeCount();
   document.getElementById('meBody').innerHTML = `
     <div class="cell wide" style="margin-top:2px">
-      <div class="k">匿名使用中</div>
+      <div class="k">${auth.on ? maskPhone(auth.phone) : '匿名使用中'}</div>
       <h1 class="t" style="font-size:23px;margin:6px 0 4px">${
         sessions ? `问过 ${sessions} 次 · ${themes} 个主题` : '还没有记录'}</h1>
       <div class="ms" style="font-size:13px;color:var(--ink-3);line-height:1.7">
-        ${sessions ? '现在的记录只存在这台设备上。登录之后可以在别的设备继续看。'
-                   : '数据已经清空了。下次占问会重新开始。'}</div>
-      <button class="pill" id="meLogin" style="height:48px;font-size:15px;margin-top:14px">登录 / 注册</button>
+        ${!sessions ? '数据已经清空了。下次占问会重新开始。'
+          : auth.on ? '记录已经跟着这个账号，换台设备登录同一个号就能看到。'
+                    : '现在的记录只存在这台设备上。登录之后可以在别的设备继续看。'}</div>
+      ${auth.on
+        ? `<button class="medanger" id="meLogout" style="margin-top:14px;padding:13px 16px;font-size:14.5px">
+             <span>退出登录</span></button>`
+        : `<button class="pill" id="meLogin" style="height:48px;font-size:15px;margin-top:14px">登录 / 注册</button>`}
     </div>
 
     <div class="mesec">数据与权限</div>
@@ -1491,8 +1597,10 @@ function renderMe(){
     </div>
     <div style="height:18px"></div>`;
 
-  document.getElementById('meLogin').addEventListener('click', () =>
-    toast('登录还没做，下一步就接'));
+  const loginBtn = document.getElementById('meLogin');
+  if(loginBtn) loginBtn.addEventListener('click', () => { renderLogin(); go('login'); });
+  const logoutBtn = document.getElementById('meLogout');
+  if(logoutBtn) logoutBtn.addEventListener('click', doLogout);
 
   bindSwitch('swMemory', 'memory', v =>
     v ? '记忆建议已打开' : '不再给你看候选记忆。已经保存的仍然在心事地图里。');
@@ -1500,6 +1608,157 @@ function renderMe(){
     v ? '谢谢，对话会用于改进模型' : '已关闭，对话不会用于训练');
 
   document.getElementById('meWipe').addEventListener('click', wipeAll);
+}
+
+/* ---------- 登录 ----------
+   后端把失败都归成 code，这里翻译成人话。直接把 invalid_code 甩给用户
+   是在让用户读我们的实现。 */
+const AUTH_MSG = {
+  cooldown:            '刚发过了，一分钟后可以再要一次',
+  daily_limit:         '这个号码今天要得太多了，明天再试',
+  invalid_code:        '验证码不对，再看看',
+  too_many_attempts:   '错太多次了，等会儿再试',
+  terms_required:      '需要先同意用户协议',
+  sms_failed:          '短信没发出去，稍后再试',
+  invalid_credentials: '手机号或验证码不对',
+  unauthorized:        '登录状态过期了，重新登录一下',
+};
+const LG = { phone:'', code:'', agreed:false, sent:false, cooldown:0, busy:false, err:'' };
+let cooldownTimer = null;
+
+async function authPost(path, body){
+  let res;
+  try {
+    res = await fetch('/v1/auth/' + path, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body),
+    });
+  } catch { return { ok:false, msg:'连不上服务器' }; }
+  if(res.status === 204) return { ok:true, data:null };
+  let j = null;
+  try { j = await res.json(); } catch {}
+  if(res.ok) return { ok:true, data:j };
+  /* 后端的错误体是 {detail:{code,message}}；422 是 pydantic 的校验错，形状不同 */
+  const code = j && j.detail && j.detail.code;
+  if(code) return { ok:false, code, msg: AUTH_MSG[code] || j.detail.message || '登录失败' };
+  if(res.status === 422) return { ok:false, msg:'手机号格式不对' };
+  return { ok:false, msg:'登录失败（' + res.status + '）' };
+}
+
+function renderLogin(){
+  const canSend = /^1[3-9]\d{9}$/.test(LG.phone) && !LG.cooldown && !LG.busy;
+  const canGo   = canSend !== undefined && /^1[3-9]\d{9}$/.test(LG.phone)
+                  && LG.code.length >= 4 && LG.agreed && !LG.busy;
+  document.getElementById('loginBody').innerHTML = `
+    <div style="padding:8px 2px 20px">
+      <h1 class="t" style="font-size:25px;line-height:1.45">登录后，换台设备<br>也能看到自己的记录</h1>
+      <div class="menote" style="margin-top:10px">没登录也能用，记录留在这台设备上。</div>
+    </div>
+
+    ${LG.err ? `<div class="lgerr">${LG.err}</div>` : ''}
+
+    <input class="lginput" id="lgPhone" type="tel" inputmode="numeric" maxlength="11"
+           placeholder="手机号" value="${LG.phone}" autocomplete="tel">
+
+    <div class="lgrow">
+      <input class="lginput" id="lgCode" type="tel" inputmode="numeric" maxlength="6"
+             placeholder="验证码" value="${LG.code}" autocomplete="one-time-code">
+      <button class="lgsend" id="lgSend" ${canSend ? '' : 'disabled'}>${
+        LG.cooldown ? LG.cooldown + ' 秒' : (LG.sent ? '重新发送' : '获取验证码')}</button>
+    </div>
+
+    <div class="lgterms" id="lgTerms" role="checkbox" tabindex="0" aria-checked="${LG.agreed}">
+      <span class="lgbox">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F4E5C3" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </span>
+      <span class="tx">我已阅读并同意<b>《于你 Alpha 用户协议》</b>与<b>《隐私政策》</b>。
+        我确认已满 18 周岁。</span>
+    </div>
+
+    <button class="pill" id="lgGo" style="margin-top:18px" ${canGo ? '' : 'disabled style="opacity:.45"'}>
+      ${LG.busy ? '正在登录…' : '登录'}
+    </button>
+
+    <div class="menote" style="margin-top:16px">
+      验证码 5 分钟内有效。登录只用于识别你的记录，不会发任何营销短信。
+    </div>
+    <div style="height:20px"></div>`;
+
+  const phoneEl = document.getElementById('lgPhone');
+  const codeEl  = document.getElementById('lgCode');
+  /* 只重绘按钮状态，不重绘整个表单——重绘会让输入框失焦，中文输入法直接被打断 */
+  const refresh = () => {
+    const ok = /^1[3-9]\d{9}$/.test(LG.phone) && LG.code.length >= 4 && LG.agreed && !LG.busy;
+    const go = document.getElementById('lgGo');
+    go.disabled = !ok; go.style.opacity = ok ? '' : '.45';
+    const sd = document.getElementById('lgSend');
+    sd.disabled = !(/^1[3-9]\d{9}$/.test(LG.phone) && !LG.cooldown && !LG.busy);
+  };
+  phoneEl.addEventListener('input', e => {
+    LG.phone = e.target.value.replace(/\D/g,'').slice(0,11);
+    if(e.target.value !== LG.phone) e.target.value = LG.phone;
+    refresh();
+  });
+  codeEl.addEventListener('input', e => {
+    LG.code = e.target.value.replace(/\D/g,'').slice(0,6);
+    if(e.target.value !== LG.code) e.target.value = LG.code;
+    refresh();
+  });
+  const terms = document.getElementById('lgTerms');
+  const toggle = () => { LG.agreed = !LG.agreed; terms.setAttribute('aria-checked', String(LG.agreed)); refresh(); };
+  terms.addEventListener('click', toggle);
+  terms.addEventListener('keydown', e => { if(e.key===' '||e.key==='Enter'){ e.preventDefault(); toggle(); }});
+  document.getElementById('lgSend').addEventListener('click', sendCode);
+  document.getElementById('lgGo').addEventListener('click', doLogin);
+}
+
+async function sendCode(){
+  if(LG.busy) return;
+  LG.busy = true; LG.err = ''; renderLogin();
+  const r = await authPost('send-code', { phone_number: LG.phone, purpose: 'login' });
+  LG.busy = false;
+  if(!r.ok){ LG.err = r.msg; renderLogin(); return; }
+  LG.sent = true; LG.cooldown = 60; LG.err = '';
+  renderLogin();
+  toast('验证码已发送');
+  clearInterval(cooldownTimer);
+  cooldownTimer = setInterval(() => {
+    LG.cooldown--;
+    const b = document.getElementById('lgSend');
+    if(!b || LG.cooldown <= 0){
+      clearInterval(cooldownTimer); LG.cooldown = 0;
+      if(document.getElementById('s-login').classList.contains('on')) renderLogin();
+      return;
+    }
+    b.textContent = LG.cooldown + ' 秒';
+  }, 1000);
+}
+
+async function doLogin(){
+  if(LG.busy) return;
+  LG.busy = true; LG.err = ''; renderLogin();
+  const r = await authPost('verify-code', {
+    phone_number: LG.phone,
+    code: LG.code,
+    external_user_id: uid(),
+    agreed_to_terms: LG.agreed,
+  });
+  LG.busy = false;
+  if(!r.ok){ LG.err = r.msg; renderLogin(); return; }
+  /* 用后端返回的 external_user_id 覆盖本地——手机号绑过老用户时它不一样 */
+  auth.save(r.data.token, LG.phone, r.data.external_user_id);
+  LG.phone = ''; LG.code = ''; LG.agreed = false; LG.sent = false;
+  clearInterval(cooldownTimer); LG.cooldown = 0;
+  renderMe(); go('me');
+  toast('登录成功');
+}
+
+async function doLogout(){
+  const t = auth.token;
+  auth.clear();
+  renderMe();
+  toast('已退出');
+  if(t) authPost('logout', { token: t });   // 不等它，本地已经退了
 }
 
 function bindSwitch(id, key, msg){
@@ -1513,8 +1772,11 @@ function bindSwitch(id, key, msg){
 
 /* 删除要二次确认（§4.2「全部删除」是列出来的状态之一）。
    确认文案说清楚删的是什么、能不能恢复——不用「确定吗？」这种没有信息量的问法。 */
+/* 删数据 ≠ 退出登录：这是两件事，合在一起做会让用户以为删数据必须先登出，
+   或者以为登出就把数据删了。所以这里只清记录，登录态原样保留。 */
 function wipeAll(){
-  if(!confirm('删除全部数据？\n\n占问记录、深聊内容和已保存的 Aftercare 都会删掉，取不回来。')) return;
+  if(!confirm('删除全部数据？\n\n占问记录、深聊内容和已保存的 Aftercare 都会删掉，取不回来。'
+    + (auth.on ? '\n\n登录状态会保留。' : ''))) return;
   S.reading = null; S.saved = false; S.worry = ''; S.nums = [1,1,1];
   C.id = null; C.history = []; C.care = null;
   ME.wiped = true;
@@ -1557,11 +1819,12 @@ document.addEventListener('click',e=>{
     const id=g.dataset.go;
     /* 'me' 和 'home' 一样不铺演示会话——「我的」显示的是真实使用统计，
        进这一屏就凭空多一次占问，等于在骗人。 */
-    if(g.hasAttribute('data-seed')&&id!=='home'&&id!=='me') ensureReading();
+    if(g.hasAttribute('data-seed')&&id!=='home'&&id!=='me'&&id!=='login') ensureReading();
     if(id==='chat'){ ensureReading(); openChat(); }
     if(id==='after'){ ensureReading(); renderAfter(); }
     if(id==='map') renderMap();
     if(id==='me') renderMe();
+    if(id==='login') renderLogin();
     if(id==='num'){ S.nums=[1,1,1]; askEl.classList.remove('on'); syncNums(false); }
     go(id); return;
   }
@@ -1582,16 +1845,17 @@ document.addEventListener('click',e=>{
 /* ---------- 启动 / hash 直达 ----------
    同文档导航（只改 hash）不会重载页面，所以必须单独监听 hashchange，
    否则分享出去的 #chat / #map 链接在已打开的页面上点不动。 */
-const ROUTES = ['num','read','chat','after','map','me'];
+const ROUTES = ['num','read','chat','after','map','me','login'];
 function openFromHash(){
   const h = location.hash.replace('#','');
   if(!ROUTES.includes(h)){ go('home'); return; }
   /* 'me' 不铺演示会话：它要显示真实的使用统计，凭空多一次占问就是在骗人 */
-  if(h !== 'num' && h !== 'me') ensureReading();
+  if(h !== 'num' && h !== 'me' && h !== 'login') ensureReading();
   if(h === 'chat') openChat();
   if(h === 'after') renderAfter();
   if(h === 'map'){ S.saved = true; renderMap(); }
   if(h === 'me') renderMe();
+  if(h === 'login') renderLogin();
   go(h);
 }
 syncNums(false); renderHome();
