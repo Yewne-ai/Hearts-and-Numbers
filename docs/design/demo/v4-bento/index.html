@@ -479,6 +479,55 @@ details.fold[open] summary::after{ content:"  －"; }
 .sec{ padding:0 var(--pad); }
 .gap{ height:12px; flex:none; }
 
+/* ---------- 我的 ----------
+   分组靠留白，不靠颜色——和首页同一条规则，整页仍然只有 --white 和 --dark
+   两种面。开关行本身就是卡片，不再往里套一层。 */
+.mesec{ font-size:11.5px; font-weight:800; letter-spacing:.08em;
+  color:var(--ink-3); padding:0 4px 9px; margin-top:22px; }
+.merow{
+  display:flex; align-items:center; gap:14px;
+  background:var(--white); padding:16px 18px;
+  border-radius:var(--r); margin-bottom:8px;
+}
+.merow .mtx{ flex:1; min-width:0; }
+.merow .mn{ font-size:15.5px; font-weight:700; letter-spacing:-.2px; }
+.merow .ms{ font-size:12.5px; line-height:1.6; color:var(--ink-3); margin-top:3px; }
+/* 开关：轨道用 --ink-3 而不是浅灰——关闭态也必须看得出是个控件。
+   开启态用 --dark，和主行动同一个色，不引入新颜色。 */
+.sw{
+  flex:none; width:50px; height:30px; border-radius:15px; border:0; padding:0;
+  background:var(--ink-3); cursor:pointer; position:relative;
+  transition:background .18s ease;
+}
+.sw[aria-checked="true"]{ background:var(--dark); }
+.sw i{
+  position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:50%;
+  background:var(--white); transition:transform .18s cubic-bezier(.22,1,.36,1);
+}
+.sw[aria-checked="true"] i{ transform:translateX(20px); }
+/* 危险操作：描边而不是实心红块。它要能被找到，但不该在页面上最响——
+   一个天天看见的红色按钮会让人麻木，真要用的时候反而不当回事。 */
+.medanger{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  width:100%; background:transparent; border:1.5px solid var(--ink-3);
+  border-radius:var(--r); padding:16px 18px; cursor:pointer;
+  font-family:inherit; font-size:15.5px; font-weight:700; color:var(--ink);
+  text-align:left; letter-spacing:-.2px;
+}
+.menote{ font-size:12.5px; line-height:1.85; color:var(--ink-3); padding:2px 4px; }
+.menote b{ color:var(--ink-2); font-weight:700; }
+/* 轻提示：浮在 tab 栏上方，不挡住它——用户刚点完开关，下一步很可能就是换页。
+   bottom 给到 124px 是为了避开正文最后一行；104px 时实测压住了版本号那行。 */
+.toast{
+  position:absolute; left:50%; bottom:124px; transform:translate(-50%, 8px);
+  max-width:82%; padding:12px 18px; border-radius:16px;
+  background:var(--dark); color:var(--white);
+  font-size:13.5px; font-weight:600; line-height:1.6; text-align:center;
+  opacity:0; pointer-events:none; transition:opacity .2s, transform .2s;
+  z-index:20;
+}
+.toast.on{ opacity:1; transform:translate(-50%, 0); }
+
 /* ---------- 真机全屏 ---------- */
 @media (max-width:500px){
   body{ padding:0; background:var(--bg); overflow:auto; }
@@ -676,6 +725,24 @@ details.fold[open] summary::after{ content:"  －"; }
       </div>
       <nav class="nav" data-nav></nav>
     </section>
+
+    <!-- ============ 我的 ============
+         §4.2「数据与安全设置」是 P0，页面任务写的是「把控制权交给用户」。
+         所以这一屏的主体不是账号信息，是那几个开关和删除入口。 -->
+    <section class="screen" id="s-me">
+      <div class="statusbar"><span>9:41</span><span class="sb-right" data-sb></span></div>
+      <div class="body">
+        <div class="top">
+          <button class="iconbtn back" data-go="home" aria-label="返回">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+          </button>
+          <span class="brand">我的</span>
+          <span class="date"></span>
+        </div>
+        <div class="sec" id="meBody"></div>
+      </div>
+      <nav class="nav" data-nav></nav>
+    </section>
   </div>
 </div>
 
@@ -823,11 +890,25 @@ const LAST = {
 };
 const LAST_R = buildReading(...LAST.nums, MAXN);
 
+/* 「我的」页的三个状态。放在这里而不是「我的」那一节，是因为 themeCount 和
+   renderHome 都要读 wiped——const 不提升，声明必须在使用它的函数定义之前。 */
+const ME = { memory: true, training: false, wiped: false };
+
 /* 主题数 = 上一次 + 本次（若已保存）。心事地图入口要显示里面有没有东西。 */
-const themeCount = () => 1 + (S.saved ? 1 : 0);
+const themeCount = () => ME.wiped ? (S.saved ? 1 : 0) : 1 + (S.saved ? 1 : 0);
 
 function renderHome(){
   const cell = document.getElementById('lastCell');
+  /* 删过全部数据之后，这一格必须跟着空掉——首屏还挂着刚被删掉的那件心事，
+     是这个产品最不该出的错。 */
+  if(ME.wiped && !S.saved){
+    cell.innerHTML = `
+      <div class="last-head"><span class="k" style="margin:0">还没有记录</span></div>
+      <div class="last-q" style="color:var(--ink-3);font-size:15px">
+        想不明白的时候，报三个数，我们从那里开始。</div>`;
+    document.getElementById('mapCellMeta').textContent = '还没有主题';
+    return;
+  }
   const p = LAST_R.positions.map(x=>x.palace);
   cell.innerHTML = `
     <div class="last-head">
@@ -862,7 +943,7 @@ function openLast(){
 const NAV=[
   {id:'home',lb:'于你',go:'home',ic:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/>'},
   {id:'map',lb:'心事地图',go:'map',ic:'<circle cx="7" cy="7.5" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="10" r="3.6" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="17.5" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/>'},
-  {id:'me',lb:'我的',ic:'<circle cx="12" cy="8.5" r="3.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 20a7 7 0 0 1 14 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'},
+  {id:'me',lb:'我的',go:'me',ic:'<circle cx="12" cy="8.5" r="3.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 20a7 7 0 0 1 14 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>'},
 ];
 function renderNav(el,act){
   el.innerHTML = NAV.map(n=>`<button class="${n.id===act?'on':''}" ${n.go?`data-seed data-go="${n.go}"`:''}>
@@ -870,7 +951,7 @@ function renderNav(el,act){
 }
 
 /* ---------- 路由 ---------- */
-const NAV_OF={home:'home',map:'map'};
+const NAV_OF={home:'home',map:'map',me:'me'};
 function go(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   const el=document.getElementById('s-'+id); el.classList.add('on');
@@ -1324,7 +1405,7 @@ function renderMap(){
   if(S.saved&&S.reading) themes.push({worry:worryText()||'这次没有写下具体的问题',when:'今天 · 刚刚保存',
     palaces:S.reading.positions.map(x=>x.palace),
     lines:[['反复出现的主题','一旦没有回音，就开始预设最坏的结果。']]});
-  themes.push({...LAST, palaces:LAST_R.positions.map(x=>x.palace)});
+  if(!ME.wiped) themes.push({...LAST, palaces:LAST_R.positions.map(x=>x.palace)});
   document.getElementById('mapMeta').textContent=`${themes.length} 个主题`;
   document.getElementById('mapBody').innerHTML=`
     ${themes.map(t=>`
@@ -1341,6 +1422,120 @@ function renderMap(){
       <div class="sv" style="font-size:13px;line-height:1.75;color:#43402F">还需要一次相关记录。累积三次之后，于你会告诉你：这类情况下，你真正有效的动作通常是什么。</div>
     </div>
     <div style="height:16px"></div>`;
+}
+
+/* ---------- 我的 ----------
+   §4.2 这一屏的页面任务是「把控制权交给用户」，所以主体是开关和删除，
+   不是账号信息展示。
+
+   两个开关的默认值不是随手定的：
+   - 记忆建议默认开，但**建议 ≠ 写入**。§6.6 要求候选记忆逐条确认、默认未选中，
+     真正的授权发生在记忆确认页；这里关掉的是「还要不要给我看候选」。
+   - 训练授权默认关。§8.7「训练授权与服务授权分开，默认不勾选」，
+     这一条没有商量余地，也是为什么它单独一行、写清楚「默认关闭」。 */
+
+function renderMe(){
+  /* 删过之后连 LAST（演示用的「三天前那次」）也不再算——否则点完「删除全部数据」
+     统计纹丝不动，看起来就像没删掉。演示数据也要服从用户的删除动作。 */
+  const sessions = ME.wiped ? 0 : 1 + (S.saved ? 1 : 0);
+  const themes   = ME.wiped ? 0 : themeCount();
+  document.getElementById('meBody').innerHTML = `
+    <div class="cell wide" style="margin-top:2px">
+      <div class="k">匿名使用中</div>
+      <h1 class="t" style="font-size:23px;margin:6px 0 4px">${
+        sessions ? `问过 ${sessions} 次 · ${themes} 个主题` : '还没有记录'}</h1>
+      <div class="ms" style="font-size:13px;color:var(--ink-3);line-height:1.7">
+        ${sessions ? '现在的记录只存在这台设备上。登录之后可以在别的设备继续看。'
+                   : '数据已经清空了。下次占问会重新开始。'}</div>
+      <button class="pill" id="meLogin" style="height:48px;font-size:15px;margin-top:14px">登录 / 注册</button>
+    </div>
+
+    <div class="mesec">数据与权限</div>
+
+    <div class="merow">
+      <div class="mtx">
+        <div class="mn">记忆建议</div>
+        <div class="ms">聊完之后，把可能值得记住的整理成候选给你看。<b>每一条仍然要你自己确认</b>才会留下。</div>
+      </div>
+      <button class="sw" id="swMemory" role="switch" aria-checked="${ME.memory}"
+              aria-label="记忆建议"><i></i></button>
+    </div>
+
+    <div class="merow">
+      <div class="mtx">
+        <div class="mn">用于改进模型</div>
+        <div class="ms">把对话内容用于训练。默认关闭，和使用这个产品本身无关，关着不影响任何功能。</div>
+      </div>
+      <button class="sw" id="swTraining" role="switch" aria-checked="${ME.training}"
+              aria-label="用于改进模型"><i></i></button>
+    </div>
+
+    <div class="mesec">这些记录</div>
+    <button class="medanger" id="meWipe">
+      <span>删除全部数据</span>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+    <div class="menote" style="margin-top:10px">
+      占问记录、深聊内容和已保存的 Aftercare 会一起删掉，删了取不回来。
+    </div>
+
+    <div class="mesec">关于</div>
+    <div class="menote">
+      回应由 <b>AI 生成</b>，仅供参考，不提供医疗、法律或金融建议。<br>
+      三数结果由固定算法算出，同一组数字在任何模型版本下都不变。<br>
+      聊天记录默认保留 <b>7 天</b>；没有保存的 Aftercare 保留 <b>24 小时</b>。<br>
+      语音不长期保存。
+    </div>
+    <div class="menote" style="margin-top:12px;opacity:.72">
+      ${METHOD_VERSION} ／ ${CORPUS_VERSION}
+    </div>
+    <div style="height:18px"></div>`;
+
+  document.getElementById('meLogin').addEventListener('click', () =>
+    toast('登录还没做，下一步就接'));
+
+  bindSwitch('swMemory', 'memory', v =>
+    v ? '记忆建议已打开' : '不再给你看候选记忆。已经保存的仍然在心事地图里。');
+  bindSwitch('swTraining', 'training', v =>
+    v ? '谢谢，对话会用于改进模型' : '已关闭，对话不会用于训练');
+
+  document.getElementById('meWipe').addEventListener('click', wipeAll);
+}
+
+function bindSwitch(id, key, msg){
+  const el = document.getElementById(id);
+  el.addEventListener('click', () => {
+    ME[key] = !ME[key];
+    el.setAttribute('aria-checked', String(ME[key]));
+    toast(msg(ME[key]));
+  });
+}
+
+/* 删除要二次确认（§4.2「全部删除」是列出来的状态之一）。
+   确认文案说清楚删的是什么、能不能恢复——不用「确定吗？」这种没有信息量的问法。 */
+function wipeAll(){
+  if(!confirm('删除全部数据？\n\n占问记录、深聊内容和已保存的 Aftercare 都会删掉，取不回来。')) return;
+  S.reading = null; S.saved = false; S.worry = ''; S.nums = [1,1,1];
+  C.id = null; C.history = []; C.care = null;
+  ME.wiped = true;
+  worryEl.value = '';
+  toast('已删除');
+  renderMe();
+}
+
+/* 轻提示：开关这类操作要有回执，但不值得打断。 */
+let toastT = null;
+function toast(text){
+  let el = document.getElementById('toast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'toast'; el.className = 'toast';
+    document.querySelector('.phone').appendChild(el);
+  }
+  el.textContent = text;
+  el.classList.add('on');
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>el.classList.remove('on'), 2200);
 }
 
 /* ---------- 事件 ---------- */
@@ -1360,10 +1555,13 @@ document.addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');
   if(g){
     const id=g.dataset.go;
-    if(g.hasAttribute('data-seed')&&id!=='home') ensureReading();
+    /* 'me' 和 'home' 一样不铺演示会话——「我的」显示的是真实使用统计，
+       进这一屏就凭空多一次占问，等于在骗人。 */
+    if(g.hasAttribute('data-seed')&&id!=='home'&&id!=='me') ensureReading();
     if(id==='chat'){ ensureReading(); openChat(); }
     if(id==='after'){ ensureReading(); renderAfter(); }
     if(id==='map') renderMap();
+    if(id==='me') renderMe();
     if(id==='num'){ S.nums=[1,1,1]; askEl.classList.remove('on'); syncNums(false); }
     go(id); return;
   }
@@ -1384,14 +1582,16 @@ document.addEventListener('click',e=>{
 /* ---------- 启动 / hash 直达 ----------
    同文档导航（只改 hash）不会重载页面，所以必须单独监听 hashchange，
    否则分享出去的 #chat / #map 链接在已打开的页面上点不动。 */
-const ROUTES = ['num','read','chat','after','map'];
+const ROUTES = ['num','read','chat','after','map','me'];
 function openFromHash(){
   const h = location.hash.replace('#','');
   if(!ROUTES.includes(h)){ go('home'); return; }
-  if(h !== 'num') ensureReading();
+  /* 'me' 不铺演示会话：它要显示真实的使用统计，凭空多一次占问就是在骗人 */
+  if(h !== 'num' && h !== 'me') ensureReading();
   if(h === 'chat') openChat();
   if(h === 'after') renderAfter();
   if(h === 'map'){ S.saved = true; renderMap(); }
+  if(h === 'me') renderMe();
   go(h);
 }
 syncNums(false); renderHome();
