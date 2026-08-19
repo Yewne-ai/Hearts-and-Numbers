@@ -173,7 +173,7 @@ def unclear_hint_for(lean: str) -> str:
 def compose_system_prompt(
     base_persona_prompt: str,
     persona: str,
-    mode: ResponseMode,
+    mode: ResponseMode | None,
     lean: str = "none",
     chat_mode: ChatMode | None = None,
 ) -> str:
@@ -188,9 +188,16 @@ def compose_system_prompt(
 
     `lean`（历史偏好）只在推断出 UNCLEAR 时有效，其余一概忽略，
     用户自己选了模式时也不生效。这是硬性的，不要为了"多点个性化"铺开。
+
+    [2026-08-18] `mode` 可以是 None：分类器关掉或判失败，但用户自己选了模式时
+    走的就是这条路。此时只有 chat_mode 一条信息，照它走即可；两个都为 None
+    是调用方的错（那种情况根本不该进来），直接抛而不是悄悄返回裸人格——
+    后者会让"块没生效"这种问题沉默地漏到线上。
     """
     if chat_mode is not None:
         block = block_for_chat_mode(chat_mode)
+    elif mode is None:
+        raise ValueError("compose_system_prompt 需要 mode 或 chat_mode 至少给一个")
     else:
         block = block_for(persona, mode)
         if mode is ResponseMode.UNCLEAR:

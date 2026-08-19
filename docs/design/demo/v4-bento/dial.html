@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4E5C3">
+<title>于你 · 罗盘选数原型</title>
+<style>
+/* ============================================================
+   三数输入「罗盘」原型 —— 1–99 单数字选择
+
+   只做交互本体，不接主流程。目的是回答两个问题：
+     1. 手感对不对（尤其 iOS 没有网页触觉反馈这一条能不能补上）
+     2. 三个数能不能在 §4.6 要求的 10 秒内选完 —— 页面自己掐表
+
+   刻意不做成风水罗盘：没有同心圆环、没有天干地支、没有八卦方位。
+   §4.6 禁「传统算命网站」观感，§5.1 承诺不混入其他体系。
+   这里的参照物是 iOS 指南针那种精密仪器刻度盘。
+   ============================================================ */
+:root{
+  --bg:      oklch(92.5% 0.048 88);
+  --bg-2:    oklch(87%   0.075 86);
+  --white:   oklch(98.5% 0.012 88);
+  --ink:     oklch(24%   0.015 85);
+  --ink-2:   oklch(43%   0.025 87);
+  --ink-3:   oklch(48%   0.025 88);
+  --dark:    oklch(22%   0.014 85);
+  --sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+          "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --r: 26px;
+}
+*{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body{ margin:0; padding:0; }
+body{
+  font-family:var(--sans); -webkit-font-smoothing:antialiased;
+  background:#E6E2D8; display:flex; align-items:center; justify-content:center;
+  min-height:100vh; min-height:100dvh; overflow:hidden;
+}
+.phone{ position:relative; flex:none; transform-origin:center; }
+.device{
+  width:390px; height:844px; background:var(--bg);
+  border-radius:54px; border:11px solid #17171a;
+  box-shadow:0 0 0 2px #3c3c40, 0 36px 80px rgba(40,34,18,.3);
+  position:relative; overflow:hidden;
+  display:flex; flex-direction:column;
+}
+.island{ position:absolute; top:11px; left:50%; transform:translateX(-50%);
+  width:122px; height:34px; background:#000; border-radius:20px; z-index:60; }
+.homebar{ position:absolute; bottom:9px; left:50%; transform:translateX(-50%);
+  width:140px; height:5px; border-radius:3px; background:rgba(35,32,26,.8); z-index:60; }
+
+.top{ flex:none; padding:62px 20px 0; display:flex; align-items:center; gap:10px; }
+.top .ttl{ font-size:15px; font-weight:700; color:var(--ink); }
+.top .meta{ margin-left:auto; font-family:var(--mono); font-size:11px; color:var(--ink-3); }
+
+/* ---------- 三个空位 ---------- */
+.slots{ flex:none; display:flex; gap:9px; padding:16px 20px 0; }
+.slot{
+  flex:1; height:62px; border-radius:18px; background:rgba(255,255,255,.5);
+  display:flex; align-items:center; justify-content:center;
+  font-size:26px; font-weight:800; color:var(--ink);
+  transition:background .22s cubic-bezier(.22,1,.36,1), color .22s;
+}
+.slot.set{ background:var(--dark); color:var(--white); }
+.slot.active{ box-shadow:inset 0 0 0 2.5px var(--ink); }
+.ord{ display:flex; gap:9px; padding:7px 20px 0; }
+.ord span{ flex:1; text-align:center; font-size:11px; font-weight:600; color:var(--ink-3); }
+
+/* ---------- 罗盘 ---------- */
+.dialwrap{
+  flex:1; min-height:0; display:flex; align-items:center; justify-content:center;
+  position:relative; touch-action:none; user-select:none; -webkit-user-select:none;
+}
+.dial{ position:relative; width:302px; height:302px; }
+.dial svg{ display:block; width:100%; height:100%; }
+.dial:focus-visible{ outline:3px solid var(--ink); outline-offset:8px; border-radius:50%; }
+
+/* 中心读数：数字是主角，盘是配角 */
+.readout{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; pointer-events:none;
+}
+.num{
+  font-size:78px; font-weight:800; line-height:1; color:var(--ink);
+  font-variant-numeric:tabular-nums; letter-spacing:-2px;
+}
+.num.tick{ animation:pop .16s cubic-bezier(.22,1,.36,1); }
+@keyframes pop{ 0%{transform:scale(.93)} 100%{transform:scale(1)} }
+.hint{ font-size:12px; font-weight:600; color:var(--ink-3); margin-top:8px; }
+
+/* 顶部指针：固定不动，盘在转 */
+.pointer{
+  position:absolute; top:-2px; left:50%; transform:translateX(-50%);
+  width:0; height:0; border-left:7px solid transparent; border-right:7px solid transparent;
+  border-top:11px solid var(--ink);
+}
+
+/* ---------- 底部 ---------- */
+.foot{ flex:none; padding:0 20px 26px; }
+.pill{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  width:100%; height:56px; border:0; border-radius:30px; cursor:pointer;
+  background:var(--dark); color:var(--white);
+  font-family:inherit; font-size:16.5px; font-weight:700;
+  transition:transform .14s, opacity .14s;
+}
+.pill:active{ transform:scale(.97); }
+.pill.ghost{ background:rgba(255,255,255,.72); color:var(--ink); margin-top:9px; height:46px; font-size:14px; }
+.result{
+  background:var(--white); border-radius:var(--r); padding:16px 18px; margin-bottom:12px;
+  font-size:13.5px; line-height:1.75; color:var(--ink-2);
+}
+.result b{ color:var(--ink); font-size:15px; }
+.result .t{ font-family:var(--mono); font-size:12px; color:var(--ink-3); margin-top:6px; }
+
+@media (max-width:500px){
+  body{ padding:0; background:var(--bg); overflow:hidden; }
+  .phone{ transform:none !important; width:100%; }
+  .device{ width:100vw; height:100vh; height:100dvh; border:0; border-radius:0; box-shadow:none; }
+  .island,.homebar{ display:none; }
+  .top{ padding-top:calc(env(safe-area-inset-top,0px) + 14px); }
+  .foot{ padding-bottom:calc(env(safe-area-inset-bottom,0px) + 18px); }
+}
+@media (prefers-reduced-motion:reduce){
+  .num.tick{ animation:none; }
+  .slot{ transition:none; }
+}
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <div class="device">
+    <div class="island"></div><div class="homebar"></div>
+
+    <div class="top">
+      <span class="ttl">罗盘选数 · 原型</span>
+      <span class="meta" id="timer">0.0s</span>
+    </div>
+
+    <div class="slots" id="slots">
+      <div class="slot"></div><div class="slot"></div><div class="slot"></div>
+    </div>
+    <div class="ord"><span>其一</span><span>其二</span><span>其三</span></div>
+
+    <div class="dialwrap">
+      <div class="dial" id="dial" tabindex="0" role="slider"
+           aria-label="选择 1 到 99 之间的数字"
+           aria-valuemin="1" aria-valuemax="99" aria-valuenow="1">
+        <div class="pointer"></div>
+        <svg viewBox="0 0 302 302" id="svg" aria-hidden="true">
+          <g id="ring"></g>
+        </svg>
+        <div class="readout">
+          <div class="num" id="num">1</div>
+          <div class="hint" id="hint">转动 · 或点圆周任意处</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot" id="foot">
+      <button class="pill" id="confirm">确定</button>
+      <button class="pill ghost" id="reset">重来</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const N = 99;                     // 1–99
+const STEP = 360 / N;             // 每格 3.636°
+const CX = 151, CY = 151, R = 132;
+
+/* ---------- 刻度盘 ---------- */
+(function buildRing(){
+  const g = document.getElementById('ring');
+  let html = `<circle cx="${CX}" cy="${CY}" r="${R + 15}" fill="none"
+                stroke="rgba(35,32,26,.08)" stroke-width="1"/>`;
+  for (let i = 0; i < N; i++){
+    const v = i + 1;
+    const major = v % 10 === 0;
+    const mid   = v % 5 === 0 && !major;
+    const len   = major ? 15 : mid ? 10 : 6;
+    const w     = major ? 2.2 : 1.2;
+    const op    = major ? .62 : mid ? .34 : .20;
+    const a = i * STEP;
+    html += `<line x1="${CX}" y1="${CY - R}" x2="${CX}" y2="${CY - R + len}"
+              stroke="rgba(35,32,26,${op})" stroke-width="${w}" stroke-linecap="round"
+              transform="rotate(${a} ${CX} ${CY})" data-i="${i}"/>`;
+    if (major){
+      // 标签反向自转，保持始终正立
+      html += `<text x="${CX}" y="${CY - R + 34}" text-anchor="middle"
+                font-family="ui-monospace,Menlo,monospace" font-size="13" font-weight="600"
+                fill="rgba(35,32,26,.55)"
+                transform="rotate(${a} ${CX} ${CY}) rotate(${-a} ${CX} ${CY - R + 30})">${v}</text>`;
+    }
+  }
+  g.innerHTML = html;
+})();
+
+/* ---------- 状态 ---------- */
+const dial = document.getElementById('dial');
+const ring = document.getElementById('ring');
+const numEl = document.getElementById('num');
+const hintEl = document.getElementById('hint');
+const slots = document.getElementById('slots').children;
+
+let angle = 0;          // 盘的连续旋转角（可超过 360）
+let value = 1;
+let picked = [];
+let t0 = null, timerId = null;
+
+const valueAt = a => (((Math.round(-a / STEP) % N) + N) % N) + 1;
+const snapOf  = a => -Math.round(-a / STEP) * STEP;
+
+function paint(popped){
+  ring.setAttribute('transform', `rotate(${angle} ${CX} ${CY})`);
+  const v = valueAt(angle);
+  if (v !== value){
+    value = v;
+    numEl.textContent = v;
+    dial.setAttribute('aria-valuenow', v);
+    // 触觉：Android 有效，iOS Safari 无此 API，静默失败
+    if (navigator.vibrate) navigator.vibrate(6);
+    if (popped){ numEl.classList.remove('tick'); void numEl.offsetWidth; numEl.classList.add('tick'); }
+  }
+}
+
+/* ---------- 计时：验证 §4.6「10 秒内可完成」 ---------- */
+function startTimer(){
+  if (t0) return;
+  t0 = performance.now();
+  timerId = setInterval(()=>{
+    document.getElementById('timer').textContent =
+      ((performance.now() - t0) / 1000).toFixed(1) + 's';
+  }, 100);
+}
+
+/* ---------- 拖拽 + 惯性 ---------- */
+const angleOf = e => {
+  const r = dial.getBoundingClientRect();
+  return Math.atan2(e.clientY - (r.top + r.height/2),
+                    e.clientX - (r.left + r.width/2)) * 180 / Math.PI;
+};
+let dragging = false, lastA = 0, moved = 0, vel = 0, lastT = 0, raf = null;
+
+dial.addEventListener('pointerdown', e => {
+  if (picked.length >= 3) return;
+  startTimer();
+  cancelAnimationFrame(raf);
+  dragging = true; moved = 0; vel = 0;
+  lastA = angleOf(e); lastT = performance.now();
+  dial.setPointerCapture(e.pointerId);
+});
+
+dial.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  const a = angleOf(e);
+  let d = a - lastA;
+  if (d > 180) d -= 360; else if (d < -180) d += 360;   // 跨越 ±180 的接缝
+  const now = performance.now(), dt = Math.max(1, now - lastT);
+  angle += d; moved += Math.abs(d);
+  vel = d / dt * 16;                                     // 度/帧
+  lastA = a; lastT = now;
+  paint(true);
+});
+
+dial.addEventListener('pointerup', e => {
+  if (!dragging) return;
+  dragging = false;
+
+  // 位移很小 = 点击，把点到的那一格转到指针处
+  if (moved < 4){
+    const a = angleOf(e) + 90;                           // 以 12 点为 0
+    let d = -a; if (d > 180) d -= 360; else if (d < -180) d += 360;
+    angle += d;
+    glide(snapOf(angle));
+    return;
+  }
+  // 甩动 → 惯性衰减 → 吸附
+  const decay = () => {
+    vel *= 0.94;
+    angle += vel;
+    paint(true);
+    if (Math.abs(vel) > 0.35) raf = requestAnimationFrame(decay);
+    else glide(snapOf(angle));
+  };
+  raf = requestAnimationFrame(decay);
+});
+
+/* 平滑滑到目标角，落定 */
+function glide(target){
+  cancelAnimationFrame(raf);
+  const step = () => {
+    const d = target - angle;
+    if (Math.abs(d) < 0.06){ angle = target; paint(true); return; }
+    angle += d * 0.24;
+    paint(true);
+    raf = requestAnimationFrame(step);
+  };
+  raf = requestAnimationFrame(step);
+}
+
+/* ---------- 键盘（旋钮对读屏和键盘不友好，必须留通路） ---------- */
+dial.addEventListener('keydown', e => {
+  const d = { ArrowUp:1, ArrowRight:1, ArrowDown:-1, ArrowLeft:-1,
+              PageUp:10, PageDown:-10 }[e.key];
+  if (d === undefined && e.key !== 'Home' && e.key !== 'End') return;
+  e.preventDefault(); startTimer();
+  let v = e.key === 'Home' ? 1 : e.key === 'End' ? N : value + d;
+  v = ((v - 1 + N) % N) + 1;
+  angle = -(v - 1) * STEP;
+  paint(true);
+});
+
+/* ---------- 确定 / 重来 ---------- */
+document.getElementById('confirm').addEventListener('click', () => {
+  if (picked.length >= 3) return;
+  picked.push(value);
+  const s = slots[picked.length - 1];
+  s.textContent = value; s.classList.add('set');
+  [...slots].forEach((x,i)=>x.classList.toggle('active', i === picked.length));
+  if (picked.length === 3) finish();
+  else { angle = 0; value = 1; numEl.textContent = '1'; paint(false); }
+});
+
+function finish(){
+  clearInterval(timerId);
+  const secs = ((performance.now() - t0) / 1000).toFixed(1);
+  hintEl.textContent = '三个数都有了';
+  document.getElementById('foot').innerHTML = `
+    <div class="result">
+      <b>${picked.join(' · ')}</b>
+      <div class="t">三个数共用时 ${secs}s　·　§4.6 要求 10s 内可完成 ${secs <= 10 ? '✓' : '✗'}</div>
+    </div>
+    <button class="pill ghost" onclick="location.reload()" style="margin:0">再试一次</button>`;
+}
+document.getElementById('reset').addEventListener('click', ()=>location.reload());
+
+/* ---------- 启动 ---------- */
+slots[0].classList.add('active');
+paint(false);
+
+/* 桌面等比缩放 */
+const phone = document.getElementById('phone');
+const DW = 412, DH = 866;
+function fit(){
+  if (matchMedia('(max-width:500px)').matches){ phone.style.transform=''; phone.style.margin=''; return; }
+  const s = Math.min(1, (innerHeight - 24) / DH, (innerWidth - 24) / DW);
+  phone.style.transform = `scale(${s})`;
+  phone.style.margin = `${(s-1)*DH/2}px ${(s-1)*DW/2}px`;
+}
+addEventListener('resize', fit); fit();
+</script>
+</body>
+</html>

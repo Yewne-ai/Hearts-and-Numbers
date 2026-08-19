@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     rate_limit_speech_per_minute: int = 60  # 语音按句调用,比 chat 频繁
     rate_limit_aftercare_per_minute: int = 10  # 一轮对话结束才调一次
     rate_limit_verify_code_per_minute: int = 10  # 配合下面的尝试上限一起挡暴力破解
+    # 一次占问最多打两次模型(生成 + 校验不过的重试),比 chat 贵;而且 §5.2 本来就要求
+    # 提示用户别反复重问,所以取值比 aftercare 还紧。
+    rate_limit_reflection_per_minute: int = 6
 
     # 按身份限流之外再按 IP 兜一层,倍数放大——因为 external_user_id 是客户端自己生成的,
     # 换一个就能绕过按身份的额度。

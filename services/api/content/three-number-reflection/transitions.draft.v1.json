@@ -1,0 +1,187 @@
+[
+  {
+    "id": "trans-daan-daan-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "大安", "to_palace": "大安",
+    "allowed_interpretation": "稳定需求在前后两个阶段都较突出，重点是确认哪些基础已经存在、哪些仍需维护。",
+    "forbidden_claims": ["什么都不用做", "一定会保持稳定"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-daan-liulian-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "大安", "to_palace": "留连",
+    "allowed_interpretation": "表面稳定不等于问题已结束，可能仍有未说清的部分。",
+    "forbidden_claims": ["一定会陷入停滞", "问题永远无法解决"], "source": "product-document-example", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-daan-suxi-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "大安", "to_palace": "速喜",
+    "allowed_interpretation": "已有的稳定基础可能让变化更容易被承接，仍需要核实变化是否真实发生。",
+    "forbidden_claims": ["好消息一定到来", "事情必然加速"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-daan-chikou-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "大安", "to_palace": "赤口",
+    "allowed_interpretation": "原有稳定感可能受到沟通摩擦影响，先确认事实和表达方式比急着判断结果更重要。",
+    "forbidden_claims": ["必然发生争吵", "有人故意破坏稳定"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-daan-xiaoji-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "大安", "to_palace": "小吉",
+    "allowed_interpretation": "稳定基础上可能出现有限而真实的帮助，适合先接住一个小进展。",
+    "forbidden_claims": ["贵人一定出现", "事情一定成功"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-daan-kongwang-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "大安", "to_palace": "空亡",
+    "allowed_interpretation": "表面平稳之下仍可能缺少关键信息，需要区分已有基础和尚未证实的期待。",
+    "forbidden_claims": ["稳定只是虚假表象", "一切都会落空"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+
+  {
+    "id": "trans-liulian-daan-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "留连", "to_palace": "大安",
+    "allowed_interpretation": "反复拉扯之后，回到事实、边界和日常秩序可能更有助于恢复稳定。",
+    "forbidden_claims": ["问题已经彻底解决", "只要等待就会稳定"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-liulian-liulian-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "留连", "to_palace": "留连",
+    "allowed_interpretation": "等待和反复可能在持续，重点不是继续猜测，而是找出维持循环的具体一环。",
+    "forbidden_claims": ["永远不会有结果", "注定被困住"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-liulian-suxi-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "留连", "to_palace": "速喜",
+    "allowed_interpretation": "反复之后可能出现变化，重点是先准备好如何回应。",
+    "forbidden_claims": ["马上会有好消息", "变化一定带来理想结果"], "source": "product-document-example", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-liulian-chikou-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "留连", "to_palace": "赤口",
+    "allowed_interpretation": "长期悬而未决可能积累委屈或防御，沟通前需要先分清事实和情绪。",
+    "forbidden_claims": ["等待必然导致冲突", "对方故意拖延伤害你"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-liulian-xiaoji-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "留连", "to_palace": "小吉",
+    "allowed_interpretation": "反复之中可能出现一个有限的改善入口，可以先观察小变化是否能够持续。",
+    "forbidden_claims": ["等待一定值得", "小进展等于最终成功"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-liulian-kongwang-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "留连", "to_palace": "空亡",
+    "allowed_interpretation": "反复思考可能与信息不足相互加强，需要暂停用猜测填补空白。",
+    "forbidden_claims": ["等待注定落空", "对方一定隐瞒事实"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+
+  {
+    "id": "trans-suxi-daan-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "速喜", "to_palace": "大安",
+    "allowed_interpretation": "变化出现后，更值得关注的是它能否落到稳定、可持续的现实基础上。",
+    "forbidden_claims": ["变化一定会稳定下来", "结果已经确定"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-suxi-liulian-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "速喜", "to_palace": "留连",
+    "allowed_interpretation": "最初的变化或期待之后可能出现等待，适合调整节奏而不是把延迟直接视为坏结果。",
+    "forbidden_claims": ["好转只是错觉", "事情一定重新停滞"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-suxi-suxi-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "速喜", "to_palace": "速喜",
+    "allowed_interpretation": "变化感在持续，但连续信号仍不等于最终结果，需要为行动保留核实空间。",
+    "forbidden_claims": ["马上成功", "所有变化都是好消息"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-suxi-chikou-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "速喜", "to_palace": "赤口",
+    "allowed_interpretation": "变化和急迫感可能放大误解，需要放慢沟通。",
+    "forbidden_claims": ["必然发生争吵", "变化一定带来坏结果"], "source": "product-document-example", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-suxi-xiaoji-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "速喜", "to_palace": "小吉",
+    "allowed_interpretation": "变化可能落成一个有限进展，适合先确认这一小步实际带来了什么。",
+    "forbidden_claims": ["进展一定扩大", "事情马上成功"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-suxi-kongwang-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "速喜", "to_palace": "空亡",
+    "allowed_interpretation": "出现变化信号时仍可能缺少关键事实，不宜把一时动向当成最终答案。",
+    "forbidden_claims": ["所有希望都会落空", "变化一定是假的"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+
+  {
+    "id": "trans-chikou-daan-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "赤口", "to_palace": "大安",
+    "allowed_interpretation": "摩擦之后，回到事实、边界和稳定节奏可能帮助局面降温。",
+    "forbidden_claims": ["冲突已经彻底结束", "只要沉默就会稳定"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-chikou-liulian-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "赤口", "to_palace": "留连",
+    "allowed_interpretation": "没有被处理的沟通摩擦可能进入反复，需要找出最常被触发的具体环节。",
+    "forbidden_claims": ["争执永远不会结束", "对方一定故意纠缠"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-chikou-suxi-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "赤口", "to_palace": "速喜",
+    "allowed_interpretation": "摩擦之后可能出现新的回应或变化，重点是观察沟通方式是否真的不同。",
+    "forbidden_claims": ["争吵后一定和好", "对方马上会道歉"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-chikou-chikou-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "赤口", "to_palace": "赤口",
+    "allowed_interpretation": "防御和误解可能持续放大，暂停对抗并确认原意比继续争输赢更重要。",
+    "forbidden_claims": ["一定有人要害你", "冲突必然升级"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-chikou-xiaoji-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "赤口", "to_palace": "小吉",
+    "allowed_interpretation": "摩擦并非只能升级，小范围协作可能打开出口。",
+    "forbidden_claims": ["一定会和好", "贵人会解决冲突"], "source": "product-document-example", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-chikou-kongwang-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "赤口", "to_palace": "空亡",
+    "allowed_interpretation": "强烈情绪可能让关键信息更难被看见，先澄清事实再判断关系或结果。",
+    "forbidden_claims": ["冲突说明一切都没希望", "对方一定在隐瞒"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+
+  {
+    "id": "trans-xiaoji-daan-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "小吉", "to_palace": "大安",
+    "allowed_interpretation": "小范围的帮助或进展可能支持稳定下来，适合确认哪些做法值得继续。",
+    "forbidden_claims": ["小进展保证长期稳定", "事情已经圆满"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-xiaoji-liulian-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "小吉", "to_palace": "留连",
+    "allowed_interpretation": "已有小进展不代表底层拉扯已经结束，需要观察反复出现的部分。",
+    "forbidden_claims": ["进展都是假的", "问题永远解决不了"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-xiaoji-suxi-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "小吉", "to_palace": "速喜",
+    "allowed_interpretation": "有限改善可能带来下一步变化，仍应让行动与现实反馈保持一致。",
+    "forbidden_claims": ["小进展一定带来大转机", "成功已经确定"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-xiaoji-chikou-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "小吉", "to_palace": "赤口",
+    "allowed_interpretation": "已有进展可能受到沟通方式影响，保护小成果需要更清楚的表达和边界。",
+    "forbidden_claims": ["进展一定被破坏", "有人故意制造冲突"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-xiaoji-xiaoji-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "小吉", "to_palace": "小吉",
+    "allowed_interpretation": "有限而可见的改善可能逐步积累，重点是承认小步而不夸大结果。",
+    "forbidden_claims": ["事情必成", "贵人一定持续帮助"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-xiaoji-kongwang-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "小吉", "to_palace": "空亡",
+    "allowed_interpretation": "有进展信号，但关键事实仍不足，不宜过度推演。",
+    "forbidden_claims": ["进展一定落空", "没有任何希望"], "source": "product-document-example", "review_status": "draft-unreviewed"
+  },
+
+  {
+    "id": "trans-kongwang-daan-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "空亡", "to_palace": "大安",
+    "allowed_interpretation": "从猜测回到事实和日常稳定，可能比继续追问更有效。",
+    "forbidden_claims": ["问题一定恢复稳定", "只要停止思考就会变好"], "source": "product-document-example", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-kongwang-liulian-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "空亡", "to_palace": "留连",
+    "allowed_interpretation": "信息不足可能让思绪反复停留，补充事实比继续在空白中寻找答案更重要。",
+    "forbidden_claims": ["注定长期等待", "对方一定不愿给答案"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-kongwang-suxi-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "空亡", "to_palace": "速喜",
+    "allowed_interpretation": "信息空白之后可能出现新动向，但仍需要验证它是否足以改变现实判断。",
+    "forbidden_claims": ["马上会得到答案", "新消息一定是好消息"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-kongwang-chikou-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "空亡", "to_palace": "赤口",
+    "allowed_interpretation": "缺少信息时的猜测可能加重防御和误解，沟通前应先确认自己真正知道什么。",
+    "forbidden_claims": ["未知必然导致争吵", "对方一定心怀恶意"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-kongwang-xiaoji-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "空亡", "to_palace": "小吉",
+    "allowed_interpretation": "信息不足时，一点现实帮助或小进展可以减少推演，但还不能替代完整事实。",
+    "forbidden_claims": ["帮助一定会出现", "小进展证明结果确定"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  },
+  {
+    "id": "trans-kongwang-kongwang-v1", "corpus_version": "2026-08-draft-v1", "from_palace": "空亡", "to_palace": "空亡",
+    "allowed_interpretation": "关键信息可能仍然不足，继续推演的价值有限，适合暂缓结论并寻找可验证事实。",
+    "forbidden_claims": ["一切成空", "永远不会有答案"], "source": "technical-draft", "review_status": "draft-unreviewed"
+  }
+]
