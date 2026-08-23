@@ -16,6 +16,11 @@ from app.domain.reflection import (
 from app.llm.provider import LLMError
 
 
+@pytest.fixture(autouse=True)
+def _configured_deepseek_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "deepseek_api_key", "test-key")
+
+
 def _valid_draft_payload() -> dict:
     scene = get_scene_corpus(Scene.RELATIONSHIP_UNCERTAINTY)
     return {
@@ -139,3 +144,20 @@ async def test_generator_normalizes_non_200_and_invalid_json() -> None:
                 scene=Scene.RELATIONSHIP_UNCERTAINTY,
             )
     assert decode_error.value.code == "decode"
+
+
+@pytest.mark.asyncio
+async def test_generator_rejects_empty_api_key_before_http(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "deepseek_api_key", "   ")
+
+    with pytest.raises(LLMError) as exc_info:
+        await DeepSeekReflectionGenerator().generate(
+            question="他不回复我",
+            calculation=calculate_three_numbers(2, 5, 2),
+            scene=Scene.RELATIONSHIP_UNCERTAINTY,
+        )
+
+    assert exc_info.value.code == "configuration"
+    assert "API key is not configured" in str(exc_info.value)

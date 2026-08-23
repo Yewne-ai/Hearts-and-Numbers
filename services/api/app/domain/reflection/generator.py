@@ -143,6 +143,12 @@ class DeepSeekReflectionGenerator:
         strict: bool = False,
         validation_issues: tuple[str, ...] = (),
     ) -> ReadingDraft:
+        if not settings.deepseek_api_key.strip():
+            raise LLMError(
+                "configuration",
+                "reflection generator API key is not configured",
+            )
+
         context = _build_generation_context(
             question,
             calculation,

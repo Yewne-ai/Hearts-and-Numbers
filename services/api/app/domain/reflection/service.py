@@ -104,6 +104,13 @@ async def generate_reflection_reading(
             )
         except LLMError as exc:
             last_reason = f"generator-{exc.code}"
+            if exc.code == "configuration":
+                return build_fixed_reading(
+                    calculation,
+                    scene,
+                    fallback_reason=last_reason,
+                    generation_attempts=attempt,
+                )
             issues = (last_reason,)
             continue
 

@@ -159,6 +159,27 @@ async def test_service_falls_back_after_two_generator_errors() -> None:
 
 
 @pytest.mark.asyncio
+async def test_service_does_not_retry_configuration_error() -> None:
+    generator = FakeGenerator(
+        [
+            LLMError("configuration", "missing key"),
+            _valid_draft(),
+        ]
+    )
+
+    reading = await generate_reflection_reading(
+        question="他最近为什么不回复我",
+        calculation=calculate_three_numbers(2, 5, 2),
+        generator=generator,
+    )
+
+    assert reading.generation_mode == "fixed-fallback"
+    assert reading.generation_attempts == 1
+    assert reading.fallback_reason == "generator-configuration"
+    assert len(generator.calls) == 1
+
+
+@pytest.mark.asyncio
 async def test_service_requires_user_choice_when_scene_is_not_unique() -> None:
     generator = FakeGenerator([_valid_draft()])
 

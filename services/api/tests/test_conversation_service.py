@@ -22,6 +22,7 @@ class _FakeOkProvider:
         history: list[dict] | None = None,
         persona: str = "nini",
         mode: object | None = None,
+        chat_mode: object | None = None,
     ) -> str:
         return f"fake-reply: {user_text}"
 
@@ -37,6 +38,7 @@ class _FakeFailingProvider:
         history: list[dict] | None = None,
         persona: str = "nini",
         mode: object | None = None,
+        chat_mode: object | None = None,
     ) -> str:
         raise LLMError(self.code, "boom", upstream_status=self.status)
 

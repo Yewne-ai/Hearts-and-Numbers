@@ -134,11 +134,15 @@ class _SpyProvider:
         self.complete_modes: list[ResponseMode | None] = []
         self.stream_modes: list[ResponseMode | None] = []
 
-    async def complete(self, user_text, history=None, persona="nini", mode=None):
+    async def complete(
+        self, user_text, history=None, persona="nini", mode=None, chat_mode=None
+    ):
         self.complete_modes.append(mode)
         return "好的。"
 
-    async def stream_complete(self, user_text, history=None, persona="nini", mode=None):
+    async def stream_complete(
+        self, user_text, history=None, persona="nini", mode=None, chat_mode=None
+    ):
         self.stream_modes.append(mode)
         for token in ("好", "的", "。"):
             yield token
@@ -201,7 +205,12 @@ class TestStreamPathGetsMode:
                 self.complete_modes: list[ResponseMode | None] = []
 
             async def complete(
-                self, user_text, history=None, persona="nini", mode=None
+                self,
+                user_text,
+                history=None,
+                persona="nini",
+                mode=None,
+                chat_mode=None,
             ):
                 self.complete_modes.append(mode)
                 return "好的。"
